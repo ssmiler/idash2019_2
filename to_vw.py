@@ -15,7 +15,6 @@ args = parser.parse_args()
 
 import pandas as pd
 import numpy as np
-import utils
 import sklearn
 import sklearn.preprocessing
 
@@ -23,9 +22,6 @@ import sklearn.preprocessing
 line_fmt = '{}_{}'
 if args.numerical_feats:
   line_fmt = '{}:{}'
-
-
-np.random.seed(42) # ??
 
 X_orig = pd.read_pickle(args.tag_file)
 y_orig = pd.read_pickle(args.target_file)
