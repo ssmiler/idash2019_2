@@ -9,7 +9,7 @@ parser.add_argument('-d', '--delta_pos', type=int, default=2e5, help='SNP positi
 parser.add_argument('-o', '--out_dir', type=str, default='.', help='data output path')
 parser.add_argument('-t', '--tag_file', type=str, default='../data/snp_tag_1k.pickle', help='input tag file')
 parser.add_argument('--target_file', type=str, default='../data/snp_target.pickle', help='input target file')
-parser.add_argument('-n', '--numerical_feats', type=bool, default=False, help='output numerical features, one-hot-encoded if not')
+parser.add_argument('-n', '--numerical_feats', action='store_true', help='output numerical features, one-hot-encoded if not')
 
 args = parser.parse_args()
 
