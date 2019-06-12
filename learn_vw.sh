@@ -13,8 +13,8 @@ params="-k --quiet "
 params+="--loss_function=logistic "
 params+="--oaa 3 "
 params+="--holdout_period 5 "
-# params+="--passes 10 -c "
-params+="-q :: " #quadratic interactions
+params+="--passes 10 -c "
+# params+="-q :: " #quadratic interactions
 
 # train models
 parallel -j $jobs vw -d {1} $params -f $model_out_path/{1/.}.model ::: $input_files

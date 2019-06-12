@@ -35,9 +35,9 @@ for i in range(n):
 
 import sklearn.metrics
 
-for k in range(3):
-  s_val = sklearn.metrics.roc_auc_score(y_test[:,k], y_pred[:,k], average='micro')
-  print("{}: micro-AUC {}".format(k, s_val))
+# for k in range(3):
+#   s_val = sklearn.metrics.roc_auc_score(y_test[:,k], y_pred[:,k], average='micro')
+#   print("{}: micro-AUC {}".format(k, s_val))
 
 s_val = sklearn.metrics.roc_auc_score(y_test, y_pred, average='micro')
 print("micro-AUC {}".format(s_val))
