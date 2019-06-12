@@ -1,8 +1,3 @@
-# mkdir -p ../data/vw/1k && python3 -o ../data/vw/1k -t ../data/snp_tag_1k.pickle
-# mkdir -p ../data/vw/1k_num && python3 -o ../data/vw/1k_num -t ../data/snp_tag_1k.pickle -n
-# mkdir -p ../data/vw/10k && python3 -o ../data/vw/10k -t ../data/snp_tag_10k.pickle
-# mkdir -p ../data/vw/10k_num && python3 -o ../data/vw/10k_num -t ../data/snp_tag_10k.pickle -n
-
 import argparse
 parser = argparse.ArgumentParser(description='Output VW files')
 parser.add_argument('-d', '--delta_pos', type=int, default=2e5, help='SNP position delta')
@@ -15,13 +10,6 @@ args = parser.parse_args()
 
 import pandas as pd
 import numpy as np
-import sklearn
-import sklearn.preprocessing
-
-
-line_fmt = '{}_{}'
-if args.numerical_feats:
-  line_fmt = '{}:{}'
 
 X_orig = pd.read_pickle(args.tag_file)
 y_orig = pd.read_pickle(args.target_file)
@@ -29,28 +17,23 @@ y_orig = pd.read_pickle(args.target_file)
 def export_vw(X, y):
   assert(len(X) == len(y))
 
-  for k in range(3):
-    yp = (y == k) + 0
-    if not np.any(yp): continue
+  y += 1
+  out_file_name = '{}/{}.vw'.format(args.out_dir, y.name)
 
-    yp[yp == 0] = -1
+  lines = list()
+  if args.numerical_feats:
+    for j in range(len(X)):
+      x_line = X.iloc[j]
+      x_line = x_line[x_line != 0]
+      feats = ' '.join(map(lambda e: '{}:{}'.format(*e), x_line.items())) # numerical features
+      lines.append('{} | {}\n'.format(y[j], feats))
+  else:
+    for j in range(len(X)):
+      x_line = X.iloc[j]
+      feats = ' '.join(map(lambda e: '{}_{}'.format(*e), x_line.items())) # one-hot-encoded features
+      lines.append('{} | {}\n'.format(y[j], feats))
 
-    out_file_name = '{}/{}_{}.vw'.format(args.out_dir, y.name, k)
-
-    lines = list()
-    if args.numerical_feats:
-      for j in range(len(X)):
-        x_line = X.iloc[j]
-        x_line = x_line[x_line != 0]
-        feats = ' '.join(map(lambda e: '{}:{}'.format(*e), x_line.items())) # numerical features
-        lines.append('{} | {}\n'.format(yp[j], feats))
-    else:
-      for j in range(len(X)):
-        x_line = X.iloc[j]
-        feats = ' '.join(map(lambda e: '{}_{}'.format(*e), x_line.items())) # one-hot-encoded features
-        lines.append('{} | {}\n'.format(yp[j], feats))
-
-    open(out_file_name, 'w').writelines(lines)
+  open(out_file_name, 'w').writelines(lines)
 
 
 delta_pos = args.delta_pos
@@ -65,3 +48,21 @@ for i in range(y_orig.shape[1]):
 
   print('Export SNP {}'.format(y_snp))
   export_vw(X, y)
+
+
+sys.exit()
+
+lines=list()
+y = y_orig.iloc[:,6]
+for j in range(len(X_orig)):
+  x_line = X_orig.iloc[j]
+  feats = ' '.join(map(lambda e: '{}_{}'.format(*e), x_line.items())) # one-hot-encoded features
+  lines.append('{}\n'.format(feats))
+open(args.tag_file + '_' + str(y.name) + '.vw', 'w').writelines(lines)
+
+
+for j in range(y_orig.shape[1]):
+  x_line = X.iloc[j]
+  feats = ' '.join(map(lambda e: '{}_{}'.format(*e), x_line.items())) # one-hot-encoded features
+  lines.append('{}\n'.format(feats))
+open(args.target_file + '.vw', 'w').writelines(lines)
