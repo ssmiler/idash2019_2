@@ -8,6 +8,6 @@ add_executable(encrypt encrypt.cpp)
 add_executable(decrypt decrypt.cpp)
 # target_link_libraries(decrypt)
 
-add_executable(compute compute.cpp parse_vw.cpp)
-# target_link_libraries(compute)
+add_executable(validation validation.cpp parse_vw.cpp)
+# target_link_libraries(validation)
 
