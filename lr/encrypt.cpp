@@ -4,24 +4,51 @@
 #include <cstdint>
 #include <iostream>
 #include <cmath>
+#include <tfhe.h>
 #include "parse_vw.h"
 
 using namespace std;
 
 struct PlaintextData {
-    std::unordered_map<std::string, std::vector<int8_t>>;  // for each feature, the snip vector (0,1,2) or -1 if NAN
+    // for each feature, the snip vector (0,1,2) or -1 if NAN
+    // features are indexed by name (pos)
+    std::unordered_map<std::string, std::vector<int8_t>> data;
+};
+
+struct Model {
+    //for each output feature and snip, coefficients map to apply
+    // output features are indexed by name (pos)
+    // input features are indexed by pos_0, pos_1, pos_2 or "CONSTANT"
+    std::unordered_map<std::string, std::array<std::unordered_map<std::string, float>, 3>> model;
 };
 
 struct EncryptedData {
-    double SCALING_FACTOR;                              // CONSTANT chosen at encryption
-    std::unordered_map<std::string, void *> enc_data;   // enc_data = one hot encoding of input / SCALING_FACTOR,
-    //            1 TRLWE packs N samples
+    // SCALING_FACTOR is chosen at encryption
+    // enc_data = one hot encoding of input / SCALING_FACTOR
+    //            indexed by input feature name_snp: pos_0, pos_1, pos_2
+    //            1 TRLWE packs the N samples
+    double IN_SCALING_FACTOR;   // upon encryption, scale by IN_SCALING_FACTOR
+    double COEF_SCALING_FACTOR; // multiply all coeffs by COEFF_SCALING_FACTOR
+    double OUT_SCALING_FACTOR;  // upon decryption, scale by OUT_SCALING_FACTOR
+    // the product of the three factors is = 1.
+    double NAN_0 = 3. / 6.;  // one hot encoding of NAN - value for snp 0
+    double NAN_1 = 2. / 6.;  // one hot encoding of NAN - value for snp 1
+    double NAN_2 = 1. / 6.;  // one hot encoding of NAN - value for snp 2
+    std::unordered_map<std::string, TLweSample *> enc_data;
 };
 
 struct EncryptedPredictions {
-    void *score[3];                                     // predictions: 3 TRLWE vector, one per snip score
-    //              1 TRLWE packs N samples
+    // predictions: for each output feature and snip, 1 TRLWE packing the N samples
+    std::unordered_map<std::string, std::array<TLweSample *, 3> > score;
 };
+
+struct DecryptedPredictions {
+    // predictions: for each output feature and snip, 1 vector containing the score of the N samples
+    // output features are indexed by name (pos)
+    std::unordered_map<std::string, std::array<std::vector<float>, 3> > score;
+};
+
+void read_model(Model &model, const std::string &filename);
 
 void read_plaintext_data(PlaintextData &plaintext_data, const std::string &filename);
 
@@ -49,7 +76,21 @@ int main() {
     EncryptedData enc_data;
     EncryptedPredictions enc_predict;
     {
+        std::unordered_map<std::string, TorusPolynomial *> raw_data;
         // ============== Encrypt plaintext
+        uint64_t NumSamples = 0;
+        for (const auto &it: plain_data.data) {
+            const std::string &pos = it.first;
+            const std::vector<int8_t> &values = it.second;
+            if (NumSamples == 0) {
+                NumSamples = values.size();
+            } else {
+                REQUIRE_DRAMATICALLY(NumSamples == values.size(), "plaintext dimensions inconsistency")
+            }
+            for (uint64_t i = 0; i < NumSamples; i++) {
+
+            }
+        }
     }
     {
         // ============== apply model over ciphertexts
