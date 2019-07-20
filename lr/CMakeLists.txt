@@ -7,7 +7,7 @@ include_directories(./lib/tfhe/include)
 
 set(LIB_SRC
         parse_vw.h
-        parse_vw.cpp)
+        parse_vw.cpp idash.cpp idash.h)
 
 add_executable(encrypt ${LIB_SRC} encrypt.cpp)
 target_link_libraries(encrypt tfhe-spqlios-fma)
