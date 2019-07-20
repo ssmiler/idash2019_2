@@ -8,9 +8,13 @@
 
 using namespace std;
 
+struct PlaintextData {
+    std::unordered_map<std::string, std::vector<int8_t>>;  // for each feature, the snip vector (0,1,2) or -1 if NAN
+};
+
 struct EncryptedData {
     double SCALING_FACTOR;                              // CONSTANT chosen at encryption
-    std::unordered_map<std::string, void *> enc_data;    // enc_data = one hot encoding of input / SCALING_FACTOR,
+    std::unordered_map<std::string, void *> enc_data;   // enc_data = one hot encoding of input / SCALING_FACTOR,
     //            1 TRLWE packs N samples
 };
 
@@ -19,8 +23,7 @@ struct EncryptedPredictions {
     //              1 TRLWE packs N samples
 };
 
-void
-read_plaintext_data(std::unordered_map<std::string, std::vector<int8_t>> &plaintext_data, const std::string &filename);
+void read_plaintext_data(PlaintextData &plaintext_data, const std::string &filename);
 
 void write_encrypted_data(const EncryptedData &encrypted_data, const std::string &filename);
 
@@ -42,20 +45,28 @@ int main() {
         }
     }
 
-
+    PlaintextData plain_data;
     EncryptedData enc_data;
     EncryptedPredictions enc_predict;
-    const double &SCALING_FACTOR = enc_data.SCALING_FACTOR;
-    for (uint64_t i = 0; i < n; i++) {
-        // enc_predict.score[i] = TRLWE(0)
-        for (const auto &it: model[i]) {
-            const string &feature_name = it.first;
-            const double coeff = it.second;
-            const int64_t rescaled_coeff = int64_t(rint(SCALING_FACTOR * coeff));
-            const void *feature_data = enc_data.enc_data.at(feature_name);
-            //enc_predict.score[i] += rescaled_coeff * feature_data;
+    {
+        // ============== Encrypt plaintext
+    }
+    {
+        // ============== apply model over ciphertexts
+        const double &SCALING_FACTOR = enc_data.SCALING_FACTOR;
+        for (uint64_t i = 0; i < n; i++) {
+            // enc_predict.score[i] = TRLWE(0)
+            for (const auto &it: model[i]) {
+                const string &feature_name = it.first;
+                const double coeff = it.second;
+                const int64_t rescaled_coeff = int64_t(rint(SCALING_FACTOR * coeff));
+                const void *feature_data = enc_data.enc_data.at(feature_name);
+                //enc_predict.score[i] += rescaled_coeff * feature_data;
+            }
         }
     }
-
     //output score[0], score[1], score[2]
+    {
+        // ============== Decrypt predictions
+    }
 }
