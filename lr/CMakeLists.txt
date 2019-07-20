@@ -2,12 +2,16 @@ cmake_minimum_required(VERSION 3.0)
 
 project(idash_2019 VERSION 0.1.0 LANGUAGES CXX)
 
-add_executable(encrypt encrypt.cpp)
+set(LIB_SRC
+        parse_vw.h
+        parse_vw.cpp)
+
+add_executable(encrypt ${LIB_SRC} encrypt.cpp)
 # target_link_libraries(encrypt)
 
-add_executable(decrypt decrypt.cpp)
+add_executable(decrypt ${LIB_SRC} decrypt.cpp)
 # target_link_libraries(decrypt)
 
-add_executable(validation validation.cpp parse_vw.cpp)
+add_executable(validation ${LIB_SRC} validation.cpp)
 # target_link_libraries(validation)
 
