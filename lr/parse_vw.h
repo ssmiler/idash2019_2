@@ -9,4 +9,4 @@
  *                        value) map for predicting output==k (k=0..2)
  * @param[in]  file_name  The file name
  */
-void read(std::vector<std::unordered_map<std::string, float>>& coefs, const std::string& file_name);
+void read(std::vector<std::unordered_map<std::string, float>> &coefs, const std::string &file_name);
