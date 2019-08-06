@@ -26,3 +26,5 @@ df3.to_pickle('data/snp_tag_10k.pickle')
 
 assert(df1.shape[0] == df2.shape[0])
 assert(df1.shape[0] == df3.shape[0])
+
+open("data/target_snp","w").write("\n".join(map(str, df1.columns)))
