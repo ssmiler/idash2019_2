@@ -29,7 +29,7 @@ if args.pred_file:
 
 for i in range(n):
   ls = file.readline().strip().split()
-  y_pred[i] = list(map(lambda e: float(e.split(':')[1]), ls))
+  y_pred[i] = list(map(float, ls))
 
 import sklearn.metrics
 
