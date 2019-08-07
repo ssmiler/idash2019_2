@@ -33,6 +33,13 @@ for i in range(n):
 
 import sklearn.metrics
 
-print(",".join(map(lambda k: str(sklearn.metrics.roc_auc_score(y_test[:,k], y_pred[:,k])), range(3))), end='')
+vals = list()
+for k in range(3):
+  try:
+    vals.append(sklearn.metrics.roc_auc_score(y_test[:,k], y_pred[:,k]))
+  except:
+    vals.append("")
+print(",".join(map(str, vals)), end='')
+
 print(",{}".format(sklearn.metrics.roc_auc_score(y_test, y_pred, average='micro')), end='')
 # print("{} {}".format(s_val, sklearn.metrics.log_loss(y_test, y_pred)), end='')
