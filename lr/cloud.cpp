@@ -4,8 +4,8 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
                          const Model &model, const IdashParams &params) {
     // ============== apply model over ciphertexts
     const double &COEFF_SCALING_FACTOR = params.COEF_SCALING_FACTOR;
-    const TLweParams &tlweParams = *params.tlweParams;
-    const int32_t k = tlweParams.k;
+    const TLweParams *tlweParams = params.tlweParams;
+    const int32_t k = tlweParams->k;
     REQUIRE_DRAMATICALLY(k == 1, "blah");
     const uint32_t N = params.N;
     const int64_t REGION_SIZE = params.REGION_SIZE;
@@ -13,10 +13,10 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
 
     // We use two temporary ciphertexts, one for region 0 and one for region 1
     // Only at the end of the loop we rotate region 1 and add it to region 0
-    TLweSample *tmp = new_TLweSample_array(params.NUM_REGIONS, &tlweParams);
+    TLweSample *tmp = new_TLweSample_array(params.NUM_REGIONS, tlweParams);
 
     // create a temporary value to register the rotations
-    TLweSample *tmp_rot = new_TLweSample(&tlweParams);
+    TLweSample *tmp_rot = new_TLweSample(tlweParams);
 
 
     // for each output feature
@@ -27,8 +27,7 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
 
         //clear tmp
         for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
-            tLweClear(tmp + region, &tlweParams);
-            // ILA: not sure tlwe_functions.h was included in tfhe.h, that might be the reason of the error?
+            tLweClear(tmp + region, tlweParams);
         }
 
         //for each input feature, add it to the corresponding region
@@ -43,14 +42,14 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
             // rescale the model coefficient
             int32_t scaled_coeff = int32_t(rint(coeff * COEFF_SCALING_FACTOR));
             // Multiply the scaled coefficient to the input and add it to the temporary region
-            tLweAddMulTo(tmp + region, scaled_coeff, inTLWE, &tlweParams);
+            tLweAddMulTo(tmp + region, scaled_coeff, inTLWE, tlweParams);
         }
 
-        // add all regions (rotated) to the output tlwe
-        TLweSample *outTLWE = enc_preds.createAndGet(outBidx, &tlweParams);
+        // add all regions (rotated) to the output tlw
+        TLweSample *outTLWE = enc_preds.createAndGet(outBidx, tlweParams);
 
         // Init with tmp region 0
-        tLweCopy(outTLWE, tmp, &tlweParams);
+        tLweCopy(outTLWE, tmp, tlweParams);
         for (uint64_t region = 1; region < params.NUM_REGIONS; ++region) {
 
             // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
@@ -59,7 +58,7 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
                 torusPolynomialMulByXai(&tmp_rot->a[i], -region * REGION_SIZE, &tmp[region].a[i]);
             }
             // add the rotation to outTLWE
-            tLweAddTo(outTLWE, tmp_rot, &tlweParams);
+            tLweAddTo(outTLWE, tmp_rot, tlweParams);
         }
 
         //destroy the positions that must remain hidden
