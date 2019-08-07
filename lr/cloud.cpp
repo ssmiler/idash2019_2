@@ -17,8 +17,6 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
 
     // create a temporary value to register the rotations
     TLweSample *tmp_rot = new_TLweSample(&tlweParams);
-    // create the random polynomial
-    TorusPolynomial *rand_poly = new_TorusPolynomial(N);
 
 
     // for each output feature
@@ -65,7 +63,7 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
         }
 
         //destroy the positions that must remain hidden
-        for (int32_t j = params.REGION_SIZE; j < N; ++j) {
+        for (uint64_t j = params.REGION_SIZE; j < N; ++j) {
             outTLWE->b->coefsT[j] = 0;
         }
     }
