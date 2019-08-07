@@ -110,13 +110,29 @@ struct EncryptedData {
         FeatRegion rgn = params.feature_regionOf(bidx);
         enc_data.at(idx)->b->coefsT[sampleId + rgn * params.REGION_SIZE] += score;
     }
+
+    const TLweSample *getTLWE(FeatBigIndex inBidx, const IdashParams &params) const {
+        FeatIndex idx = params.feature_indexOf(inBidx);
+        REQUIRE_DRAMATICALLY(enc_data.count(idx) != 0, "shit happens before");
+        return enc_data.at(idx);
+    }
 };
 
 struct EncryptedPredictions {
     // predictions: for each output feature and snip, 1 TRLWE packing the N samples
     std::unordered_map<FeatBigIndex, TLweSample *> score;
 
-
+    //create a (non-initialized) TLWESample at position bidx.
+    TLweSample *createAndGet(FeatBigIndex bidx, const TLweParams *tLweParams) {
+        const auto &it = score.find(bidx);
+        if (it == score.end()) {
+            TLweSample *reps = new_TLweSample(tLweParams);
+            score.emplace(bidx, reps);
+            return reps;
+        }
+        DIE_DRAMATICALLY("shit happens again"); //there should not already be a value in this map
+        return it->second;
+    }
 };
 
 struct DecryptedPredictions {
