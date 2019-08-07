@@ -32,6 +32,7 @@ struct IdashParams {
     uint32_t k = 1;                 // k is always 1
     double alpha = pow(2., -20.);   // minimal noise
     uint32_t REGION_SIZE;           // N / NUM_REGIONS must be >= NUM_SAMPLES
+    const TLweParams *tlweParams;
 
     // SCALING_FACTOR is chosen at encryption
     // enc_data = one hot encoding of input / SCALING_FACTOR
@@ -75,7 +76,6 @@ struct IdashParams {
 
 struct IdashKey {
     const IdashParams *idashParams;
-    const TLweParams *tlweParams;
     const TLweKey *tlweKey;
 };
 
@@ -99,8 +99,8 @@ struct EncryptedData {
     void ensure_exists(const FeatBigIndex bidx, const IdashKey &key) {
         FeatIndex featIndex = key.idashParams->feature_indexOf(bidx);
         if (enc_data.count(featIndex) == 0) {
-            TLweSample *s = new_TLweSample(key.tlweParams);
-            tLweSymEncryptZero(s, key.tlweParams->alpha_min, key.tlweKey);
+            TLweSample *s = new_TLweSample(key.idashParams->tlweParams);
+            tLweSymEncryptZero(s, key.idashParams->tlweParams->alpha_min, key.tlweKey);
             enc_data.emplace(featIndex, s);
         }
     }

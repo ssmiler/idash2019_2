@@ -1,22 +1,10 @@
 #include "idash.h"
 
 void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data,
-                            const Model &model, const IdashParams &params,
-                            const TLweParams &tlweParams) {
-    /*
-       std::vector <std::unordered_map<std::string, float>> model;
-       read(model, "../15832228.model.hr");
-
-       const uint64_t n = model.size();
-       for (uint64_t i = 0; i < n; i++) {
-           cout << i << endl;
-           for (const auto &it: model[i]) {
-               cout << it.first << " => " << it.second << endl;
-           }
-       }
-   */
+                         const Model &model, const IdashParams &params) {
     // ============== apply model over ciphertexts
     const double &COEFF_SCALING_FACTOR = params.COEF_SCALING_FACTOR;
+    const TLweParams &tlweParams = *params.tlweParams;
     const int32_t k = tlweParams.k;
     REQUIRE_DRAMATICALLY(k == 1, "blah");
     const uint32_t N = params.N;
