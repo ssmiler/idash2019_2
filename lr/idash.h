@@ -151,6 +151,7 @@ void read_key(IdashKey &key, const std::string &filename);
 
 void read_model(Model &model, const IdashParams &params, const std::string &filename);
 
+//IDASH parse idash plaintext format
 void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &params, const std::string &filename);
 
 void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename);
@@ -163,11 +164,9 @@ void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, co
 void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const IdashParams &params,
                                 const std::string &filename);
 
+//IDASH csv with 3 columns of snp probabilities, comma separated
 void write_decrypted_predictions(const DecryptedPredictions &predictions, const IdashParams &params,
                                  const std::string &filename);
-
-void
-read_decrypted_predictions(DecryptedPredictions &predictions, const IdashParams &params, const std::string &filename);
 
 void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key);
 
@@ -175,8 +174,5 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
                          const IdashParams &params);
 
 void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedData &enc_preds, const IdashKey &key);
-
-double
-compute_auc(const DecryptedPredictions &predictions, const PlaintextData &actual_values, const IdashParams &params);
 
 #endif //IDASH_2019_IDASH_H
