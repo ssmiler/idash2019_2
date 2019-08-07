@@ -9,7 +9,7 @@ mkdir -p $data_out_path
 target_snp=`cat data/target_snp`
 # target_snp=`head -n 2 data/target_snp`
 # target_snp+=" 16367555"
-# target_snp="21035242 190694047 18855885"
+# target_snp="18170885"
 
 function export_csv()
 {
@@ -34,8 +34,8 @@ function learn()
   data_out_path=$3
   model_out_path=$4
 
-  # params="-k "
-  params="-k --quiet "
+  params="-k "
+  # params="-k --quiet --save_per_pass "
   params+="--loss_function=logistic "
   params+="--holdout_off "
   params+="--passes 20 "
@@ -90,3 +90,40 @@ parallel -j $jobs vw --quiet -d {1} -i $model_out_path/{1}_{2}.model --invert_ha
 
 rm $data_out_path -rf
 rm $model_out_path -rf
+
+
+
+
+
+function test_step_model()
+{
+  snp=$1
+  data_out_path=$2
+  model_out_path=$3
+
+  for val in 0 1 2
+  do
+    file_y=$data_out_path/$snp"_"$val.y
+    file_X=$data_out_path/$snp.X
+    for model in $model_out_path/$snp"_"$val.model.*
+    do
+      paste -d ' ' $file_y $file_X | tail -n 254 | vw --quiet -i $model --leave_duplicate_interactions -t -r $model.tmp
+    done
+  done
+
+  for model in $model_out_path/$snp"_"*.model.? $model_out_path/$snp"_"*.model.??
+  do
+    step=${model##*.}
+    paste -d " " $model_out_path/$snp"_0.model.$step.tmp" $model_out_path/$snp"_1.model.$step.tmp" $model_out_path/$snp"_2.model.$step.tmp"> $model_out_path/$snp.model.$step.pred
+
+    val=`python3 roc_vw.py -s $snp -p $model_out_path/$snp.model.$step.pred -i 2250`
+    echo $snp,$step,$val
+  done
+
+  rm $model_out_path/$snp"_"*".model."*".tmp"
+  # rm $model_out_path/$snp"_"*".model."*".pred"
+}
+export -f test_step_model
+
+echo "snp,step,auc_0,auc_1,auc_2,auc"
+parallel -j $jobs test_step_model {1} $data_out_path $model_out_path ::: $target_snp
