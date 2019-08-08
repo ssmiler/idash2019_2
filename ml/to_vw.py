@@ -15,8 +15,11 @@ import numpy as np
 target_snp=args.target_snp
 
 y = pd.read_pickle(args.target_file)
+y = y.loc[:, target_snp]
+
+open('{}/{}.y'.format(args.out_dir, target_snp), "w").write("\n".join(map(str, y)))
 for snp_val in range(3):
-  yt=(y.loc[:, target_snp]==snp_val)*2 - 1 # transform to -1,1 labels
+  yt=(y==snp_val)*2 - 1 # transform to -1,1 labels
   open('{}/{}_{}.y'.format(args.out_dir, target_snp, snp_val), "w").write("\n".join(map(str, yt)))
 
 X = pd.read_pickle(args.tag_file)

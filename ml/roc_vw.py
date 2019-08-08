@@ -13,12 +13,12 @@ import numpy as np
 import sklearn
 import sklearn.preprocessing
 
-yp = pd.read_pickle(args.target_file).loc[args.ignore_first:, args.snp]
-n = yp.shape[0]
+y = pd.read_pickle(args.target_file).loc[args.ignore_first:, args.snp]
+n = y.shape[0]
 y_test = np.zeros((n, 3), dtype = np.int8)
-y_test[:,0] = (yp == 0) + 0
-y_test[:,1] = (yp == 1) + 0
-y_test[:,2] = (yp == 2) + 0
+y_test[:,0] = (y == 0) + 0
+y_test[:,1] = (y == 1) + 0
+y_test[:,2] = (y == 2) + 0
 
 y_pred = np.zeros((n, 3))
 
@@ -36,7 +36,8 @@ import sklearn.metrics
 vals = list()
 for k in range(3):
   try:
-    vals.append(sklearn.metrics.roc_auc_score(y_test[:,k], y_pred[:,k]))
+    val = sklearn.metrics.roc_auc_score(y_test[:,k], y_pred[:,k])
+    vals.append(val)
   except:
     vals.append("")
 print(",".join(map(str, vals)), end='')
