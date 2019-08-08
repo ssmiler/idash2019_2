@@ -139,6 +139,17 @@ struct DecryptedPredictions {
     // predictions: for each output feature and snip, 1 vector containing the score of the N samples
     // output features are indexed by name (pos)
     std::unordered_map<std::string, std::array<std::vector<float>, 3> > score;
+
+    //create a (non-initialized) array of vector of floats at position defined by a sting
+    std::array<std::vector<float>, 3> *createAndGet(std::string model, const IdashParams *params) {
+        const auto &it = score.find(model);
+        if (it == score.end()) {
+            std::array<std::vector<float>, 3> *score_probs = create_new_array_scores(); // TODO
+            score.emplace(model, score_probs);
+            return score_probs;
+        }
+        DIE_DRAMATICALLY("shit happens again and again");
+    }
 };
 
 void write_params(const IdashParams &params, const std::string &filename);
@@ -173,6 +184,6 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
 void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data, const Model &model,
                          const IdashParams &params);
 
-void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedData &enc_preds, const IdashKey &key);
+void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPredictions &enc_preds, const IdashKey &key);
 
 #endif //IDASH_2019_IDASH_H
