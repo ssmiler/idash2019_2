@@ -8,7 +8,7 @@ mkdir -p $data_out_path
 
 target_snp=`cat data/target_snp`
 # target_snp=`head -n 2 data/target_snp`
-# target_snp="18170885 18490550 18633682 18677838 18733610 18830098 19046187 20143073 20398042 20439521 20441632 20792342 21750234 21957238 22489212 24379740 24386330 24906710 186803226 195915482"
+target_snp="18170885 18490550 18633682 18677838 18733610 18830098 19046187 20143073 20398042 20439521 20441632 20792342 21750234 21957238 22489212 24379740 24386330 24906710 186803226 195915482"
 
 function export_csv()
 {
@@ -33,11 +33,11 @@ function learn()
   data_out_path=$3
   model_out_path=$4
 
-  params="-k "
-  # params="-k --quiet "
+  # params="-k "
+  params="-k --quiet "
   params+="--loss_function=logistic "
   params+="--holdout_off "
-  params+="--passes 100 "
+  params+="--passes 200 "
   # params+="-q :: --leave_duplicate_interactions " #quadratic interactions
 
   file_y=$data_out_path/$snp"_"$val.y
@@ -52,35 +52,36 @@ function learn()
 export -f learn
 parallel -j $jobs learn {1} {2} $data_out_path $model_out_path ::: $target_snp ::: 0 1 2
 
+# exit
 
-function test()
-{
-  snp=$1
-  data_out_path=$2
-  model_out_path=$3
+# function test()
+# {
+#   snp=$1
+#   data_out_path=$2
+#   model_out_path=$3
 
-  for val in 0 1 2
-  do
-    file_y=$data_out_path/$snp"_"$val.y
-    file_X=$data_out_path/$snp.X
-    model=$model_out_path/$snp"_"$val.model
-    # paste -d ' ' $file_y $file_X | head -n 2250 | vw --quiet -i $model --leave_duplicate_interactions -t -r $model.tmp
-    paste -d ' ' $file_y $file_X | tail -n 254 | vw --quiet -i $model --leave_duplicate_interactions -t -r $model.tmp
-  done
+#   for val in 0 1 2
+#   do
+#     file_y=$data_out_path/$snp"_"$val.y
+#     file_X=$data_out_path/$snp.X
+#     model=$model_out_path/$snp"_"$val.model
+#     # paste -d ' ' $file_y $file_X | head -n 2250 | vw --quiet -i $model --leave_duplicate_interactions -t -r $model.tmp
+#     paste -d ' ' $file_y $file_X | tail -n 254 | vw --quiet -i $model --leave_duplicate_interactions -t -r $model.tmp
+#   done
 
-  paste -d " " $model_out_path/$snp"_0.model.tmp" $model_out_path/$snp"_1.model.tmp" $model_out_path/$snp"_2.model.tmp"> $model_out_path/$snp.model.pred
+#   paste -d " " $model_out_path/$snp"_0.model.tmp" $model_out_path/$snp"_1.model.tmp" $model_out_path/$snp"_2.model.tmp"> $model_out_path/$snp.model.pred
 
-  rm $model_out_path/$snp"_"*".model.tmp"
+#   rm $model_out_path/$snp"_"*".model.tmp"
 
-  val=`python3 roc_vw.py -s $snp -p $model_out_path/$snp.model.pred -i 2250`
-  echo $snp","$val
-}
-export -f test
+#   val=`python3 roc_vw.py -s $snp -p $model_out_path/$snp.model.pred -i 2250`
+#   echo $snp","$val
+# }
+# export -f test
 
-echo "snp,auc_0,auc_1,auc_2,auc"
-parallel -j $jobs -k test {1} $data_out_path $model_out_path ::: $target_snp
+# echo "snp,auc_0,auc_1,auc_2,auc"
+# parallel -j $jobs -k test {1} $data_out_path $model_out_path ::: $target_snp
 
-exit
+# exit
 
 # model to human-readable format
 function to_hr()
@@ -99,6 +100,7 @@ function to_hr()
 export -f to_hr
 parallel -j $jobs to_hr {1} {2} $data_out_path $model_out_path ::: $target_snp ::: 0 1 2
 
+exit
 
 #remove data and models
 
