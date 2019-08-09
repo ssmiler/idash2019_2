@@ -1,50 +1,75 @@
 #include "idash.h"
 
-void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data, const Model &model,
-                         const IdashParams &params) {
-    /*
-       std::vector <std::unordered_map<std::string, float>> model;
-       read(model, "../15832228.model.hr");
-
-       const uint64_t n = model.size();
-       for (uint64_t i = 0; i < n; i++) {
-           cout << i << endl;
-           for (const auto &it: model[i]) {
-               cout << it.first << " => " << it.second << endl;
-           }
-       }
-   */
+void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data,
+                         const Model &model, const IdashParams &params) {
     // ============== apply model over ciphertexts
     const double &COEFF_SCALING_FACTOR = params.COEF_SCALING_FACTOR;
+    const TLweParams *tlweParams = params.tlweParams;
+    const int32_t k = tlweParams->k;
+    REQUIRE_DRAMATICALLY(k == 1, "blah");
+    const uint32_t N = params.N;
+    const int64_t REGION_SIZE = params.REGION_SIZE;
+
+
+    // We use two temporary ciphertexts, one for region 0 and one for region 1
+    // Only at the end of the loop we rotate region 1 and add it to region 0
     TLweSample *tmp = new_TLweSample_array(params.NUM_REGIONS, tlweParams);
+
+    // create a temporary value to register the rotations
+    TLweSample *tmp_rot = new_TLweSample(tlweParams);
+
 
     // for each output feature
     for (const auto &it : model.model) {
+
         FeatBigIndex outBidx = it.first;
         const std::unordered_map<FeatBigIndex, float> &mcoeffs = it.second;
+
         //clear tmp
         for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
             tLweClear(tmp + region, tlweParams);
         }
+
         //for each input feature, add it to the corresponding region
         for (const auto &it2: mcoeffs) {
+
             FeatBigIndex inBidx = it2.first;
             float coeff = it2.second;
+
             FeatRegion region = params.feature_regionOf(inBidx);
-            const TLweSample *inTLWE = enc_data.getTLWE(inBidx);
-            int32_t scaled_coeff = int32_t(rint(coeff * params.COEF_SCALING_FACTOR));
+            const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
+
+            // rescale the model coefficient
+            int32_t scaled_coeff = int32_t(rint(coeff * COEFF_SCALING_FACTOR));
+            // Multiply the scaled coefficient to the input and add it to the temporary region
             tLweAddMulTo(tmp + region, scaled_coeff, inTLWE, tlweParams);
         }
-        //add all regions (rotated) to the output tlwe
-        TLweSample *outTLWE = enc_preds.createAndGet(outBidx);
-        //TODO
-        abort();
-        //randomize the positions that must remain hidden
-        //TODO
-        abort();
+
+        // add all regions (rotated) to the output tlw
+        TLweSample *outTLWE = enc_preds.createAndGet(outBidx, tlweParams);
+
+        // Init with tmp region 0
+        tLweCopy(outTLWE, tmp, tlweParams);
+        for (uint64_t region = 1; region < params.NUM_REGIONS; ++region) {
+
+            // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
+            // rotate the tmp regions
+            for (int32_t i = 0; i <= k; i++){
+                torusPolynomialMulByXai(&tmp_rot->a[i], -region * REGION_SIZE, &tmp[region].a[i]);
+            }
+            // add the rotation to outTLWE
+            tLweAddTo(outTLWE, tmp_rot, tlweParams);
+        }
+
+        //destroy the positions that must remain hidden
+        for (uint64_t j = params.REGION_SIZE; j < N; ++j) {
+            outTLWE->b->coefsT[j] = 0;
+        }
     }
 
-    delete_TLweSample_array(params.NUM_REGIONS, tlweParams);
+    // DELETE
+    delete_TLweSample(tmp_rot);
+    delete_TLweSample_array(params.NUM_REGIONS, tmp);
 }
 
 int main() {
