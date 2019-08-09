@@ -128,6 +128,7 @@ print("Mean AUC score: {}".format(df_vals.auc.mean()))
 
 if args.out_dir:
   for model_name, coeffs in df_model.items():
+    coeffs = coeffs[coeffs!=0]
     file_name = "{}/{}.hr".format(args.out_dir, model_name)
     open(file_name, "w").writelines(map(lambda e: '{} {}\n'.format(*e), coeffs.items()))
 
