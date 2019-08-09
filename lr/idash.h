@@ -32,6 +32,7 @@ struct IdashParams {
     uint32_t k = 1;                 // k is always 1
     double alpha = pow(2., -20.);   // minimal noise
     uint32_t REGION_SIZE;           // N / NUM_REGIONS must be >= NUM_SAMPLES
+    const TLweParams *tlweParams;
 
     // SCALING_FACTOR is chosen at encryption
     // enc_data = one hot encoding of input / SCALING_FACTOR
@@ -75,7 +76,6 @@ struct IdashParams {
 
 struct IdashKey {
     const IdashParams *idashParams;
-    const TLweParams *tlweParams;
     const TLweKey *tlweKey;
 };
 
@@ -99,8 +99,8 @@ struct EncryptedData {
     void ensure_exists(const FeatBigIndex bidx, const IdashKey &key) {
         FeatIndex featIndex = key.idashParams->feature_indexOf(bidx);
         if (enc_data.count(featIndex) == 0) {
-            TLweSample *s = new_TLweSample(key.tlweParams);
-            tLweSymEncryptZero(s, key.tlweParams->alpha_min, key.tlweKey);
+            TLweSample *s = new_TLweSample(key.idashParams->tlweParams);
+            tLweSymEncryptZero(s, key.idashParams->tlweParams->alpha_min, key.tlweKey);
             enc_data.emplace(featIndex, s);
         }
     }
@@ -110,13 +110,29 @@ struct EncryptedData {
         FeatRegion rgn = params.feature_regionOf(bidx);
         enc_data.at(idx)->b->coefsT[sampleId + rgn * params.REGION_SIZE] += score;
     }
+
+    const TLweSample *getTLWE(FeatBigIndex inBidx, const IdashParams &params) const {
+        FeatIndex idx = params.feature_indexOf(inBidx);
+        REQUIRE_DRAMATICALLY(enc_data.count(idx) != 0, "shit happens before");
+        return enc_data.at(idx);
+    }
 };
 
 struct EncryptedPredictions {
     // predictions: for each output feature and snip, 1 TRLWE packing the N samples
     std::unordered_map<FeatBigIndex, TLweSample *> score;
 
-
+    //create a (non-initialized) TLWESample at position bidx.
+    TLweSample *createAndGet(FeatBigIndex bidx, const TLweParams *tLweParams) {
+        const auto &it = score.find(bidx);
+        if (it == score.end()) {
+            TLweSample *reps = new_TLweSample(tLweParams);
+            score.emplace(bidx, reps);
+            return reps;
+        }
+        DIE_DRAMATICALLY("shit happens again"); //there should not already be a value in this map
+        return it->second;
+    }
 };
 
 struct DecryptedPredictions {
@@ -135,6 +151,7 @@ void read_key(IdashKey &key, const std::string &filename);
 
 void read_model(Model &model, const IdashParams &params, const std::string &filename);
 
+//IDASH parse idash plaintext format
 void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &params, const std::string &filename);
 
 void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename);
@@ -147,20 +164,15 @@ void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, co
 void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const IdashParams &params,
                                 const std::string &filename);
 
+//IDASH csv with 3 columns of snp probabilities, comma separated
 void write_decrypted_predictions(const DecryptedPredictions &predictions, const IdashParams &params,
                                  const std::string &filename);
-
-void
-read_decrypted_predictions(DecryptedPredictions &predictions, const IdashParams &params, const std::string &filename);
 
 void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key);
 
 void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data, const Model &model,
                          const IdashParams &params);
 
-void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedData &enc_preds, const IdashKey &key);
-
-double
-compute_auc(const DecryptedPredictions &predictions, const PlaintextData &actual_values, const IdashParams &params);
+void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPredictions &enc_preds, const IdashKey &key);
 
 #endif //IDASH_2019_IDASH_H
