@@ -173,4 +173,6 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
 
 void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPredictions &enc_preds, const IdashKey &key);
 
+void
+compute_score(DecryptedPredictions &predictions, const PlaintextData &X, const Model &M, const IdashParams &params);
 #endif //IDASH_2019_IDASH_H
