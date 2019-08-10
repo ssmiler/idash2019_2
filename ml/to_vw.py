@@ -1,66 +1,37 @@
 import argparse
-parser = argparse.ArgumentParser(description='Output VW files')
-parser.add_argument('-d', '--delta_pos', type=int, default=20, help='SNP position delta in thousands')
-parser.add_argument('-o', '--out_dir', type=str, default='.', help='data output path')
-parser.add_argument('-t', '--tag_file', type=str, default='data/snp_tag_1k.pickle', help='input tag file')
+parser = argparse.ArgumentParser(description='Stream VW for 1 SNP')
+parser.add_argument('-s', '--target_snp', type=int, required=True, help='target SNP')
+parser.add_argument('-n', '--neighbors', type=int, default=20, help='number of tag SNP neighbors to output')
+parser.add_argument('--tag_file', type=str, default='data/snp_tag_10k.pickle', help='input tag file')
 parser.add_argument('--target_file', type=str, default='data/snp_target.pickle', help='input target file')
-parser.add_argument('-s', '--separate', action='store_true', help='export target and tag to separate files')
+parser.add_argument('-o', '--out_dir', type=str, required=True, help='output path')
 
 args = parser.parse_args()
+# args = parser.parse_args("-s 16367555".split())
 
 import pandas as pd
 import numpy as np
 
-X_orig = pd.read_pickle(args.tag_file)
-y_orig = pd.read_pickle(args.target_file)
+target_snp=args.target_snp
+
+y = pd.read_pickle(args.target_file)
+y = y.loc[:, target_snp]
+
+open('{}/{}.y'.format(args.out_dir, target_snp), "w").write("\n".join(map(str, y)))
+for snp_val in range(3):
+  yt=(y==snp_val)*2 - 1 # transform to -1,1 labels
+  open('{}/{}_{}.y'.format(args.out_dir, target_snp, snp_val), "w").write("\n".join(map(str, yt)))
+
+X = pd.read_pickle(args.tag_file)
+neighbor_tag_snps = np.abs(X.columns - target_snp).argsort()[:args.neighbors]
+X = X.iloc[:, neighbor_tag_snps]
+
+assert(len(y) == len(X))
 
 def get_feats(x_line):
   return ' '.join(map(lambda e: '{}_{}'.format(*e), x_line.items())) # one-hot-encode features
 
-def export_vw(X, y):
-  assert(len(X) == len(y))
-  y += 1
-
-  lines = list()
-  for j in range(len(X)):
-    lines.append('{} | {}\n'.format(y[j], get_feats(X.iloc[j])))
-
-  out_file_name = '{}/{}.vw'.format(args.out_dir, y.name)
-  open(out_file_name, 'w').writelines(lines)
-
-def export_vw_separate_tag(X):
-  lines = list()
-  for j in range(len(X)):
-    lines.append('| {}\n'.format(get_feats(X.iloc[j])))
-
-  import ntpath
-  name = ntpath.splitext(ntpath.basename(args.tag_file))[0]
-  out_file_name = '{}/{}.vw'.format(args.out_dir, name)
-  open(out_file_name, 'w').writelines(lines)
-
-def export_vw_separate_target(y):
-  y += 1
-  for i in range(y.shape[1]):
-    target_snp = y.columns[i]
-    ys = y.loc[:,target_snp]
-
-    out_file_name = '{}/{}.target.vw'.format(args.out_dir, ys.name)
-    open(out_file_name, 'w').write('\n'.join(map(str, ys.values)))
-
-
-if args.separate:
-  delta_pos = args.delta_pos * 1000
-  for i in range(y_orig.shape[1]):
-    target_snp = y_orig.columns[i]
-
-    # select SNPs in +/-delta interval from target SNP
-    ind_X = np.where((X_orig.columns > target_snp-delta_pos) & (X_orig.columns < target_snp+delta_pos))[0]
-    assert(len(ind_X) == ind_X[-1] - ind_X[0] + 1)
-    X_snp = X_orig.columns[ind_X]
-
-    print('Export SNP {}'.format(target_snp))
-    X, y = X_orig.loc[:,X_snp], y_orig.loc[:,target_snp]
-    export_vw(X, y)
-else:
-  export_vw_separate_tag(X_orig)
-  export_vw_separate_target(y_orig)
+lines = list()
+for j in range(len(X)):
+  lines.append('| {}\n'.format(get_feats(X.iloc[j])))
+open('{}/{}.X'.format(args.out_dir, target_snp), "w").writelines(lines)

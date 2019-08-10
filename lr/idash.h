@@ -39,9 +39,7 @@ struct IdashParams {
     //            indexed by input feature name_snp: pos_0, pos_1, pos_2
     //            1 TRLWE packs the N samples
     double IN_SCALING_FACTOR;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[
-    double COEF_SCALING_FACTOR; // multiply all coeffs by COEFF_SCALING_FACTOR :  double -> "small int"
-    double OUT_SCALING_FACTOR;  // upon decryption, scale by OUT_SCALING_FACTOR : [-2^31,2^31[ -> double
-    // NOTE: the product of the three factors MUST BE = 1.
+
     Torus32 ONE_IN_T32 = Torus32(rint(IN_SCALING_FACTOR));
     Torus32 NAN_0_IN_T32 = Torus32(rint(3. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 0
     Torus32 NAN_1_IN_T32 = Torus32(rint(2. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 1
@@ -90,7 +88,7 @@ struct Model {
     //for each output feature and snip, coefficients map to apply
     // output features are indexed by outBigIndex
     // input features are indexed by inBigIndex
-    std::unordered_map<FeatBigIndex, std::unordered_map<FeatBigIndex, float>> model;
+    std::unordered_map<FeatBigIndex, std::unordered_map<FeatBigIndex, int32_t>> model;
 };
 
 struct EncryptedData {
@@ -149,7 +147,7 @@ void write_key(const IdashKey &key, const std::string &filename);
 
 void read_key(IdashKey &key, const std::string &filename);
 
-void read_model(Model &model, const IdashParams &params, const std::string &filename);
+void read_model(Model &model, const IdashParams &params, const std::string &path);
 
 //IDASH parse idash plaintext format
 void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &params, const std::string &filename);

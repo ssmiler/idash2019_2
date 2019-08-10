@@ -31,7 +31,7 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
             res.resize(NUM_SAMPLES);
             // rescale and copy result
             for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
-                res[sample] = plain->coefsT[sample] * params.OUT_SCALING_FACTOR;
+                res[sample] = plain->coefsT[sample];
             }
         }
         // renormalize all probabilities
