@@ -1,12 +1,14 @@
 #include <unordered_map>
 #include <string>
-#include <vector>
+#include <cstdint>
 
 /**
- * @brief      Read a vowpal wabbit model file in human-readable form
+ * @brief      Read a model file
  *
- * @param      coefs      The coefficients, where coefs[k] is a (feature name,
- *                        value) map for predicting output==k (k=0..2)
- * @param[in]  file_name  The file name
+ * @param[in]  file_name  File name
+ *
+ * @return     Model coefficients in form (pos_snp, value) map for predicting
+ *             output==k (k=0..2)
  */
-void read(std::vector<std::unordered_map<std::string, float>> &coefs, const std::string &file_name);
+std::unordered_map<std::string, int32_t> read(const std::string &file_name);
+

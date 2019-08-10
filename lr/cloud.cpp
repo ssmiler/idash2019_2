@@ -3,7 +3,6 @@
 void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data,
                          const Model &model, const IdashParams &params) {
     // ============== apply model over ciphertexts
-    const double &COEFF_SCALING_FACTOR = params.COEF_SCALING_FACTOR;
     const TLweParams *tlweParams = params.tlweParams;
     const int32_t k = tlweParams->k;
     REQUIRE_DRAMATICALLY(k == 1, "blah");
@@ -23,7 +22,7 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
     for (const auto &it : model.model) {
 
         FeatBigIndex outBidx = it.first;
-        const std::unordered_map<FeatBigIndex, float> &mcoeffs = it.second;
+        const std::unordered_map<FeatBigIndex, int32_t> &mcoeffs = it.second;
 
         //clear tmp
         for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
@@ -34,15 +33,13 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
         for (const auto &it2: mcoeffs) {
 
             FeatBigIndex inBidx = it2.first;
-            float coeff = it2.second;
+            int32_t coeff = it2.second;
 
             FeatRegion region = params.feature_regionOf(inBidx);
             const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
 
-            // rescale the model coefficient
-            int32_t scaled_coeff = int32_t(rint(coeff * COEFF_SCALING_FACTOR));
             // Multiply the scaled coefficient to the input and add it to the temporary region
-            tLweAddMulTo(tmp + region, scaled_coeff, inTLWE, tlweParams);
+            tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
         }
 
         // add all regions (rotated) to the output tlw
@@ -78,7 +75,7 @@ int main() {
     EncryptedData enc_data;
     EncryptedPredictions enc_preds;
     read_params(params, "params_file");
-    read_model(model, params, "model_file");
+    read_model(model, params, "../ml/model/hr/10k");
     read_encrypted_data(enc_data, params, "enc_data_file");
     cloud_compute_score(enc_preds, enc_data, model, params);
     write_encrypted_predictions(enc_preds, params, "enc_preds_filename");
