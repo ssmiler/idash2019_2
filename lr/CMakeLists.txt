@@ -16,7 +16,8 @@ set(PROG_SRC
         encrypt.cpp
         cloud.cpp
         decrypt.cpp
-        validation.cpp)
+        validation.cpp
+        plaintext_algo.cpp)
 
 foreach (PROG_SOURCE ${PROG_SRC})
     get_filename_component(PROG_NAME ${PROG_SOURCE} NAME_WE)
