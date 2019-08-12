@@ -4,19 +4,66 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
                    const Model &M, const IdashParams &params) {
     // ============== apply model over plaintext
 
-
-
-
-    for (const auto &j: X.data) { //j
-        const std::string &pos = j.first;
-        const std::vector<int8_t> &valuesX = j.second;
-        for (const auto &k : M.model) { //k
-            FeatBigIndex outIndex = k.first;
-            const std::unordered_map<FeatBigIndex, int32_t> &valeusM = k.second;
-            predictions.score[outIndex] = 0; //to check Y[i][k]=:0
-            for (uint64_t i = 0; i < NUM_SAMPLES; i++) {
-                predictions.score[outIndex] += valuesX[i] * valeusM[pos];    //Y[i][k]=+X[i][j]*M[j][k]
+    //plaintext one hot encoded
+    std::map<FeatBigIndex, std::vector<double>> plaintext_onehot;
+    for (const auto &it: params.in_features_index) {
+        const std::string &inPos = it.first;
+        for (int inSNP = 0; inSNP < 3; inSNP++) {
+            const FeatBigIndex inBIdx = it.second[inSNP];
+            plaintext_onehot[inBIdx].resize(params.NUM_SAMPLES);
+        }
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            switch (X.data.at(inPos)[sampleId]) {
+                case 0:
+                    plaintext_onehot[it.second[0]][sampleId] = params.ONE_IN_T32;
+                    plaintext_onehot[it.second[1]][sampleId] = 0;
+                    plaintext_onehot[it.second[2]][sampleId] = 0;
+                    break;
+                case 1:
+                    plaintext_onehot[it.second[0]][sampleId] = 0;
+                    plaintext_onehot[it.second[1]][sampleId] = params.ONE_IN_T32;
+                    plaintext_onehot[it.second[2]][sampleId] = 0;
+                    break;
+                case 2:
+                    plaintext_onehot[it.second[0]][sampleId] = 0;
+                    plaintext_onehot[it.second[1]][sampleId] = 0;
+                    plaintext_onehot[it.second[2]][sampleId] = params.ONE_IN_T32;
+                    break;
+                default: //NAN
+                    plaintext_onehot[it.second[0]][sampleId] = params.NAN_0_IN_T32;
+                    plaintext_onehot[it.second[1]][sampleId] = params.NAN_1_IN_T32;
+                    plaintext_onehot[it.second[2]][sampleId] = params.NAN_2_IN_T32;
+                    break;
             }
+        }
+    }
+
+    for (const auto &it: params.out_features_index) {
+        const std::string &outPos = it.first;
+        for (int outSNP = 0; outSNP < 3; outSNP++) {
+            const FeatBigIndex outBIdx = it.second[outSNP];
+            predictions.score[outPos][outSNP].resize(params.NUM_SAMPLES);
+            for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                predictions.score[outPos][outSNP][sampleId] = 0;
+            }
+            auto &coeffs = M.model.at(outBIdx); //coefficients for this output
+            for (const auto &it2: coeffs) {
+                for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                    //todo see what to do with the constant
+                    predictions.score[outPos][outSNP][sampleId] += it2.second * plaintext_onehot[it2.first][sampleId];
+                }
+            }
+        }
+        //normalize preds
+        double pred[3];
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            pred[0] = std::max<double>(0, predictions.score[outPos][0][sampleId]);
+            pred[1] = std::max<double>(0, predictions.score[outPos][1][sampleId]);
+            pred[2] = std::max<double>(0, predictions.score[outPos][2][sampleId]);
+            double norm = pred[0] + pred[1] + pred[2];
+            predictions.score[outPos][0][sampleId] = pred[0] / norm;
+            predictions.score[outPos][1][sampleId] = pred[1] / norm;
+            predictions.score[outPos][2][sampleId] = pred[2] / norm;
         }
     }
 }
