@@ -21,32 +21,33 @@ typedef uint32_t FeatRegion;
 struct IdashParams {
     static const uint32_t NUM_REGIONS = 2;
     static const uint32_t NUM_SNP_PER_POSITIONS = 3;
+
+    //TRLWE parameters
+    static const uint32_t N = 1024;              // TRLWE dimension
+    static const uint32_t k = 1;                 // k is always 1
+    static const double alpha;   // minimal noise   //TODO check the correct value for alpha (security doc)
+    static const uint32_t REGION_SIZE = N / NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
+    static const TLweParams *tlweParams;
+
+    // SCALING_FACTOR is chosen at encryption
+    // enc_data = one hot encoding of input / SCALING_FACTOR
+    //            indexed by input feature name_snp: pos_0, pos_1, pos_2
+    //            1 TRLWE packs the N samples
+    static const double IN_SCALING_FACTOR;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[
+
+    static const Torus32 ONE_IN_T32;
+    static const Torus32 NAN_0_IN_T32;  // one hot encoding of NAN - value for snp 0
+    static const Torus32 NAN_1_IN_T32;  // one hot encoding of NAN - value for snp 1
+    static const Torus32 NAN_2_IN_T32;  // one hot encoding of NAN - value for snp 2
+
+
+
     uint32_t NUM_SAMPLES;           //number of individuals
     uint32_t NUM_INPUT_POSITIONS;   //number of input features
     uint32_t NUM_OUTPUT_POSITIONS;  //number of output features
     uint32_t NUM_INPUT_FEATURES;    //number of input features (incl constant)
     uint32_t NUM_OUTPUT_FEATURES;   //number of output features
 
-    //TRLWE parameters
-    static const uint32_t N = 1024;              // TRLWE dimension
-    static const uint32_t k = 1;                 // k is always 1
-    static const double alpha = pow(2., -20.);   // minimal noise   //TODO check the correct value for alpha
-    static const uint32_t REGION_SIZE = N / NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
-    const TLweParams *tlweParams;
-
-    // SCALING_FACTOR is chosen at encryption
-    // enc_data = one hot encoding of input / SCALING_FACTOR
-    //            indexed by input feature name_snp: pos_0, pos_1, pos_2
-    //            1 TRLWE packs the N samples
-    static const double IN_SCALING_FACTOR = 100;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
-
-    static const Torus32 ONE_IN_T32 = Torus32(rint(IN_SCALING_FACTOR));
-    static const Torus32 NAN_0_IN_T32 = Torus32(
-            rint(3. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 0
-    static const Torus32 NAN_1_IN_T32 = Torus32(
-            rint(2. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 1
-    static const Torus32 NAN_2_IN_T32 = Torus32(
-            rint(1. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 2
 
 
     std::unordered_map<std::string, std::array<FeatBigIndex, 3>> in_features_index;
