@@ -28,22 +28,25 @@ struct IdashParams {
     uint32_t NUM_OUTPUT_FEATURES;   //number of output features
 
     //TRLWE parameters
-    uint32_t N = 1024;              // TRLWE dimension
-    uint32_t k = 1;                 // k is always 1
-    double alpha = pow(2., -20.);   // minimal noise
-    uint32_t REGION_SIZE;           // N / NUM_REGIONS must be >= NUM_SAMPLES
+    static const uint32_t N = 1024;              // TRLWE dimension
+    static const uint32_t k = 1;                 // k is always 1
+    static const double alpha = pow(2., -20.);   // minimal noise   //TODO check the correct value for alpha
+    static const uint32_t REGION_SIZE = N / NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
     const TLweParams *tlweParams;
 
     // SCALING_FACTOR is chosen at encryption
     // enc_data = one hot encoding of input / SCALING_FACTOR
     //            indexed by input feature name_snp: pos_0, pos_1, pos_2
     //            1 TRLWE packs the N samples
-    double IN_SCALING_FACTOR;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[
+    static const double IN_SCALING_FACTOR = 100;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
 
-    Torus32 ONE_IN_T32 = Torus32(rint(IN_SCALING_FACTOR));
-    Torus32 NAN_0_IN_T32 = Torus32(rint(3. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 0
-    Torus32 NAN_1_IN_T32 = Torus32(rint(2. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 1
-    Torus32 NAN_2_IN_T32 = Torus32(rint(1. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 2
+    static const Torus32 ONE_IN_T32 = Torus32(rint(IN_SCALING_FACTOR));
+    static const Torus32 NAN_0_IN_T32 = Torus32(
+            rint(3. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 0
+    static const Torus32 NAN_1_IN_T32 = Torus32(
+            rint(2. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 1
+    static const Torus32 NAN_2_IN_T32 = Torus32(
+            rint(1. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 2
 
 
     std::unordered_map<std::string, std::array<FeatBigIndex, 3>> in_features_index;
@@ -75,6 +78,9 @@ struct IdashParams {
 struct IdashKey {
     const IdashParams *idashParams;
     const TLweKey *tlweKey;
+
+    IdashKey(const IdashParams *idashParams, const TLweKey *tlweKey);
+
 };
 
 
