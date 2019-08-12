@@ -13,6 +13,7 @@ set(LIB_SRC
         parse_vw.cpp idash.cpp idash.h)
 
 set(PROG_SRC
+        keygen.cpp
         encrypt.cpp
         cloud.cpp
         decrypt.cpp

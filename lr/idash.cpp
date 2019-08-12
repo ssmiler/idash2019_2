@@ -66,3 +66,6 @@ void read_model(Model &model, const IdashParams &params, const string &path) {
   //   }
   // }
 }
+
+IdashKey::IdashKey(const IdashParams *idashParams, const TLweKey *tlweKey) : idashParams(idashParams),
+                                                                             tlweKey(tlweKey) {}
