@@ -188,8 +188,8 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
                 idashParams->NUM_SAMPLES++;
             }
         }
-        idashParams->NUM_INPUT_FEATURES++; //for the constant value
     }
+    idashParams->NUM_INPUT_FEATURES++; //for the constant value
     challenge.close();
 
 
