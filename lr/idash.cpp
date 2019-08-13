@@ -118,7 +118,7 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
         std::vector<int8_t> &v = plaintext_data.data[position];
         v.resize(idashParams.NUM_SAMPLES);
         for (uint64_t sampleId = 0; sampleId < idashParams.NUM_SAMPLES; ++sampleId) {
-            uint8_t snp;
+            uint64_t snp;
             iss >> snp;
             REQUIRE_DRAMATICALLY(iss && (snp == 0 || snp == 1 || snp == 2), "file format error");
             v[sampleId] = snp;
@@ -181,7 +181,7 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
             iss >> featureName;
             REQUIRE_DRAMATICALLY(iss, "file format error");
             while (true) {
-                uint8_t snp;
+                uint64_t snp;
                 iss >> snp;
                 if (!iss) break;
                 REQUIRE_DRAMATICALLY(snp == 0 || snp == 1 || snp == 2, "file format error");
