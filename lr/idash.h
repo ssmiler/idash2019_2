@@ -13,6 +13,9 @@
 
 #define DIE_DRAMATICALLY(message) { std::cout << "ERROR: " << message << std::endl; abort(); }
 
+#define CHALLENGE_FILE "../../data/sorted_target_SNP_genotypes_test.txt"
+#define TARGET_FILE "../../data/sorted_tag_SNPs_1k_genotypes.txt"
+
 typedef uint32_t FeatBigIndex;
 typedef uint32_t FeatIndex;
 typedef uint32_t FeatRegion;
@@ -182,4 +185,8 @@ void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPredi
 
 void
 compute_score(DecryptedPredictions &predictions, const PlaintextData &X, const Model &M, const IdashParams &params);
+
+IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile);
+
+
 #endif //IDASH_2019_IDASH_H
