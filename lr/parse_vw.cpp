@@ -10,7 +10,7 @@ unordered_map<string, int32_t> read(const string &file_name) {
 
   if (file == nullptr) {
     fprintf(stderr, "Cannot open file '%s'\n", file_name.c_str());
-    exit(-1);
+      abort();
   }
 
   unordered_map<string, int32_t> coefs;
