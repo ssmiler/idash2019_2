@@ -69,12 +69,12 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
 }
 
 int main() {
-    IdashParams params;
     Model model;
     PlaintextData data;
     DecryptedPredictions predictions;
 
-    read_params(params, "params_file");
+    IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE);
+    const IdashParams &params = *key->idashParams;
     read_model(model, params, "../ml/model/hr/10k");
     read_plaintext_data(data, params, "data_file");
     compute_score(predictions, data, model, params);
