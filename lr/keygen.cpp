@@ -55,10 +55,10 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
             iss >> featureName;
             REQUIRE_DRAMATICALLY(iss, "file format error");
             while (true) {
-                uint8_t snp;
+                uint64_t snp;
                 iss >> snp;
                 if (!iss) break;
-                REQUIRE_DRAMATICALLY(snp == '0' || snp == '1' || snp == '2', "file format error"); // what happens if first line has an empty field
+                REQUIRE_DRAMATICALLY(snp == 0 || snp == 1 || snp == 2, "file format error"); // what happens if first line has an empty field
                 idashParams->NUM_SAMPLES++;
             }
         }
@@ -90,5 +90,5 @@ int main(int argc, char** argv) {
 
     IdashKey *key = keygen(targetFile, challengeFile);
     write_params(*key->idashParams, "params_filename");
-    write_key(*key, "key_filename");
+    // write_key(*key, "key_filename");
 }
