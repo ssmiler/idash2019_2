@@ -123,7 +123,8 @@ for target_snp in target_snps:
   vals_dict[target_snp] = dict(zip(["auc_0","auc_1","auc_2","auc"], vals))
 
 df_vals = pd.DataFrame(vals_dict).T
-print(df_vals)
+df_vals.sort_index(inplace=True)
+print(df_vals.to_string())
 print("Mean AUC score: {}".format(df_vals.auc.mean()))
 
 if args.out_dir:
