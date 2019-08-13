@@ -100,19 +100,27 @@ void read_model(Model &model, const IdashParams &params, const string &path) {
 IdashKey::IdashKey(const IdashParams *idashParams, const TLweKey *tlweKey) : idashParams(idashParams),
                                                                              tlweKey(tlweKey) {}
 
+void ostream_write_binary(ostream &out, const void *data, const uint64_t size) {
+  out.write((const char *)data, size);
+}
+
+void istream_read_binary(istream &in, void *data, const uint64_t size) {
+  in.read((char *)data, size);
+}
+
 void write_params(const IdashParams &params, const string &filename) {
   ofstream out(filename.c_str(), ios::binary);
 
   REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open parameters file for write")
 
-  out.write((char *)(&params.NUM_SAMPLES), sizeof(params.NUM_SAMPLES));
-  out.write((char *)(&params.NUM_INPUT_POSITIONS),
+  ostream_write_binary(out, &params.NUM_SAMPLES, sizeof(params.NUM_SAMPLES));
+  ostream_write_binary(out, &params.NUM_INPUT_POSITIONS,
             sizeof(params.NUM_INPUT_POSITIONS));
-  out.write((char *)(&params.NUM_OUTPUT_POSITIONS),
+  ostream_write_binary(out, &params.NUM_OUTPUT_POSITIONS,
             sizeof(params.NUM_OUTPUT_POSITIONS));
-  out.write((char *)(&params.NUM_INPUT_FEATURES),
+  ostream_write_binary(out, &params.NUM_INPUT_FEATURES,
             sizeof(params.NUM_INPUT_FEATURES));
-  out.write((char *)(&params.NUM_OUTPUT_FEATURES),
+  ostream_write_binary(out, &params.NUM_OUTPUT_FEATURES,
             sizeof(params.NUM_OUTPUT_FEATURES));
 
   REQUIRE_DRAMATICALLY(params.NUM_INPUT_POSITIONS ==
@@ -124,12 +132,12 @@ void write_params(const IdashParams &params, const string &filename) {
 
     // write feature position
     size_t pos_size = pos.size();
-    out.write((char *)&pos_size, sizeof(size_t));
-    out.write(pos.c_str(), sizeof(char) * pos.size());
+    ostream_write_binary(out, &pos_size, sizeof(size_t));
+    ostream_write_binary(out, pos.c_str(), sizeof(char) * pos.size());
 
     // write snps
     for (const FeatBigIndex e2 : e1.second) {
-      out.write((char *)(&e2), sizeof(e2));
+      ostream_write_binary(out, (&e2), sizeof(e2));
     }
   }
 
@@ -142,12 +150,12 @@ void write_params(const IdashParams &params, const string &filename) {
 
     // write feature position
     size_t pos_size = pos.size();
-    out.write((char *)&pos_size, sizeof(size_t));
-    out.write(pos.c_str(), sizeof(char) * pos.size());
+    ostream_write_binary(out, &pos_size, sizeof(size_t));
+    ostream_write_binary(out, pos.c_str(), sizeof(char) * pos.size());
 
     // write snps
     for (const FeatBigIndex e2 : e1.second) {
-      out.write((char *)(&e2), sizeof(e2));
+      ostream_write_binary(out, (&e2), sizeof(e2));
     }
   }
 
@@ -159,14 +167,14 @@ void read_params(IdashParams &params, const string &filename) {
 
   REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open parameters file for read")
 
-  inp.read((char *)(&params.NUM_SAMPLES), sizeof(params.NUM_SAMPLES));
-  inp.read((char *)(&params.NUM_INPUT_POSITIONS),
+  istream_read_binary(inp, &params.NUM_SAMPLES, sizeof(params.NUM_SAMPLES));
+  istream_read_binary(inp, &params.NUM_INPUT_POSITIONS,
            sizeof(params.NUM_INPUT_POSITIONS));
-  inp.read((char *)(&params.NUM_OUTPUT_POSITIONS),
+  istream_read_binary(inp, &params.NUM_OUTPUT_POSITIONS,
            sizeof(params.NUM_OUTPUT_POSITIONS));
-  inp.read((char *)(&params.NUM_INPUT_FEATURES),
+  istream_read_binary(inp, &params.NUM_INPUT_FEATURES,
            sizeof(params.NUM_INPUT_FEATURES));
-  inp.read((char *)(&params.NUM_OUTPUT_FEATURES),
+  istream_read_binary(inp, &params.NUM_OUTPUT_FEATURES,
            sizeof(params.NUM_OUTPUT_FEATURES));
 
   char buff[256];
@@ -175,16 +183,16 @@ void read_params(IdashParams &params, const string &filename) {
     size_t pos_size;
 
     // read feature position
-    inp.read((char *)&pos_size, sizeof(size_t));
+    istream_read_binary(inp, &pos_size, sizeof(size_t));
     REQUIRE_DRAMATICALLY(pos_size < 255, "buffer overflow");
-    inp.read(buff, pos_size);
+    istream_read_binary(inp, buff, pos_size);
     buff[pos_size + 1] = '\0';
 
     // read snps
     params.in_features_index.emplace(buff, array<FeatBigIndex, 3>());
     auto &tmp = params.in_features_index.at(buff);
     for (int j = 0; j < 3; ++j) {
-      inp.read((char *)(&tmp[j]), sizeof(FeatBigIndex));
+      istream_read_binary(inp, &tmp[j], sizeof(FeatBigIndex));
     }
   }
 
@@ -196,16 +204,16 @@ void read_params(IdashParams &params, const string &filename) {
     size_t pos_size;
 
     // read feature position
-    inp.read((char *)&pos_size, sizeof(size_t));
+    istream_read_binary(inp, &pos_size, sizeof(size_t));
     REQUIRE_DRAMATICALLY(pos_size < 255, "buffer overflow");
-    inp.read(buff, pos_size);
+    istream_read_binary(inp, buff, pos_size);
     buff[pos_size + 1] = '\0';
 
     // read snps
     params.out_features_index.emplace(buff, array<FeatBigIndex, 3>());
     auto &tmp = params.out_features_index.at(buff);
     for (int j = 0; j < 3; ++j) {
-      inp.read((char *)(&tmp[j]), sizeof(FeatBigIndex));
+      istream_read_binary(inp, &tmp[j], sizeof(FeatBigIndex));
     }
   }
 
