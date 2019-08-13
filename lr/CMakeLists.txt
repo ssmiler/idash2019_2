@@ -20,8 +20,15 @@ set(PROG_SRC
         validation.cpp
         plaintext_algo.cpp)
 
+if (APPLE)
+    set(LIBTFHE tfhe-nayuki-portable)
+else ()
+    set(LIBTFHE tfhe-spqlios-fma)
+endif (APPLE)
+
+
 foreach (PROG_SOURCE ${PROG_SRC})
     get_filename_component(PROG_NAME ${PROG_SOURCE} NAME_WE)
     add_executable(${PROG_NAME} ${PROG_SOURCE} ${LIB_SRC})
-    target_link_libraries(${PROG_NAME} tfhe-spqlios-fma)
+    target_link_libraries(${PROG_NAME} ${LIBTFHE})
 endforeach (PROG_SOURCE)
