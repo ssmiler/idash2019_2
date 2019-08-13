@@ -50,7 +50,12 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
             for (const auto &it2: coeffs) {
                 for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
                     //todo see what to do with the constant
-                    predictions.score[outPos][outSNP][sampleId] += it2.second * plaintext_onehot[it2.first][sampleId];
+                    if (it2.first == params.constant_bigIndex()) {
+                        predictions.score[outPos][outSNP][sampleId] += it2.second; //TODO constant is already rescale with SCALING_FACTOR?
+                    } else {
+                        predictions.score[outPos][outSNP][sampleId] +=
+                                it2.second * plaintext_onehot[it2.first][sampleId];
+                    }
                 }
             }
         }
@@ -75,8 +80,8 @@ int main() {
 
     IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE);
     const IdashParams &params = *key->idashParams;
-    read_model(model, params, "../ml/model/hr/10k");
-    read_plaintext_data(data, params, "data_file");
+    read_model(model, params, "../../ml/model/hr/10k");
+    read_plaintext_data(data, params, CHALLENGE_FILE);
     compute_score(predictions, data, model, params);
     write_decrypted_predictions(predictions, params, "preds_filename");
 }

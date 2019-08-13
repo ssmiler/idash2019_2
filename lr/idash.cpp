@@ -67,9 +67,14 @@ void read_model(Model &model, const IdashParams &params, const string &path) {
 
             // transform raw coefficients to BigIndex
             for (const auto &elem : coefs) {
-                auto pos_snp_inp = split(elem.first);
-                FeatBigIndex feat_bidx = params.inBigIdx(pos_snp_inp.first, pos_snp_inp.second);
-                model_coefs[feat_bidx] = elem.second;
+                if (elem.first == "Constant") {
+                    FeatBigIndex feat_bidx = params.constant_bigIndex();
+                    model_coefs[feat_bidx] = elem.second;
+                } else {
+                    auto pos_snp_inp = split(elem.first);
+                    FeatBigIndex feat_bidx = params.inBigIdx(pos_snp_inp.first, pos_snp_inp.second);
+                    model_coefs[feat_bidx] = elem.second;
+                }
             }
         }
     }
@@ -228,6 +233,7 @@ void read_params(IdashParams &params, const string &filename) {
 
 void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idashParams, const std::string &filename) {
     ifstream challenge(filename);
+    REQUIRE_DRAMATICALLY(challenge, "file not found");
     std::string line;
     int64_t numPositionsRead = 0;
     for (std::getline(challenge, line); challenge; std::getline(challenge, line)) {
