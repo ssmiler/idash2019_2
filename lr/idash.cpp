@@ -1,6 +1,9 @@
 #include "idash.h"
 #include "parse_vw.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std;
 
 
@@ -96,3 +99,119 @@ void read_model(Model &model, const IdashParams &params, const string &path) {
 
 IdashKey::IdashKey(const IdashParams *idashParams, const TLweKey *tlweKey) : idashParams(idashParams),
                                                                              tlweKey(tlweKey) {}
+
+void write_params(const IdashParams &params, const string &filename) {
+  ofstream out(filename.c_str(), ios::binary);
+
+  REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open parameters file for write")
+
+  out.write((char *)(&params.NUM_SAMPLES), sizeof(params.NUM_SAMPLES));
+  out.write((char *)(&params.NUM_INPUT_POSITIONS),
+            sizeof(params.NUM_INPUT_POSITIONS));
+  out.write((char *)(&params.NUM_OUTPUT_POSITIONS),
+            sizeof(params.NUM_OUTPUT_POSITIONS));
+  out.write((char *)(&params.NUM_INPUT_FEATURES),
+            sizeof(params.NUM_INPUT_FEATURES));
+  out.write((char *)(&params.NUM_OUTPUT_FEATURES),
+            sizeof(params.NUM_OUTPUT_FEATURES));
+
+  REQUIRE_DRAMATICALLY(params.NUM_INPUT_POSITIONS ==
+                           params.in_features_index.size(),
+                       "NUM_INPUT_POSITIONS != in_features_index.size()")
+
+  for (const auto &e1 : params.in_features_index) {
+    string pos = e1.first;
+
+    // write feature position
+    size_t pos_size = pos.size();
+    out.write((char *)&pos_size, sizeof(size_t));
+    out.write(pos.c_str(), sizeof(char) * pos.size());
+
+    // write snps
+    for (const FeatBigIndex e2 : e1.second) {
+      out.write((char *)(&e2), sizeof(e2));
+    }
+  }
+
+  REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
+                           params.out_features_index.size(),
+                       "NUM_OUTPUT_POSITIONS != out_features_index.size()")
+
+  for (const auto &e1 : params.out_features_index) {
+    string pos = e1.first;
+
+    // write feature position
+    size_t pos_size = pos.size();
+    out.write((char *)&pos_size, sizeof(size_t));
+    out.write(pos.c_str(), sizeof(char) * pos.size());
+
+    // write snps
+    for (const FeatBigIndex e2 : e1.second) {
+      out.write((char *)(&e2), sizeof(e2));
+    }
+  }
+
+  out.close();
+}
+
+void read_params(IdashParams &params, const string &filename) {
+  ifstream inp(filename.c_str(), ios::binary);
+
+  REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open parameters file for read")
+
+  inp.read((char *)(&params.NUM_SAMPLES), sizeof(params.NUM_SAMPLES));
+  inp.read((char *)(&params.NUM_INPUT_POSITIONS),
+           sizeof(params.NUM_INPUT_POSITIONS));
+  inp.read((char *)(&params.NUM_OUTPUT_POSITIONS),
+           sizeof(params.NUM_OUTPUT_POSITIONS));
+  inp.read((char *)(&params.NUM_INPUT_FEATURES),
+           sizeof(params.NUM_INPUT_FEATURES));
+  inp.read((char *)(&params.NUM_OUTPUT_FEATURES),
+           sizeof(params.NUM_OUTPUT_FEATURES));
+
+  char buff[256];
+
+  for (uint32_t i = 0; i < params.NUM_INPUT_POSITIONS; ++i) {
+    size_t pos_size;
+
+    // read feature position
+    inp.read((char *)&pos_size, sizeof(size_t));
+    REQUIRE_DRAMATICALLY(pos_size < 255, "buffer overflow");
+    inp.read(buff, pos_size);
+    buff[pos_size + 1] = '\0';
+
+    // read snps
+    params.in_features_index.emplace(buff, array<FeatBigIndex, 3>());
+    auto &tmp = params.in_features_index.at(buff);
+    for (int j = 0; j < 3; ++j) {
+      inp.read((char *)(&tmp[j]), sizeof(FeatBigIndex));
+    }
+  }
+
+  REQUIRE_DRAMATICALLY(params.NUM_INPUT_POSITIONS ==
+                           params.in_features_index.size(),
+                       "NUM_INPUT_POSITIONS != in_features_index.size()")
+
+  for (uint32_t i = 0; i < params.NUM_OUTPUT_POSITIONS; ++i) {
+    size_t pos_size;
+
+    // read feature position
+    inp.read((char *)&pos_size, sizeof(size_t));
+    REQUIRE_DRAMATICALLY(pos_size < 255, "buffer overflow");
+    inp.read(buff, pos_size);
+    buff[pos_size + 1] = '\0';
+
+    // read snps
+    params.out_features_index.emplace(buff, array<FeatBigIndex, 3>());
+    auto &tmp = params.out_features_index.at(buff);
+    for (int j = 0; j < 3; ++j) {
+      inp.read((char *)(&tmp[j]), sizeof(FeatBigIndex));
+    }
+  }
+
+  REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
+                           params.out_features_index.size(),
+                       "NUM_OUTPUT_POSITIONS != out_features_index.size()")
+
+  inp.close();
+}

@@ -30,8 +30,8 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     }
     target.close();
 
-    //read all output positions from the challengeFile
-    // initializes: NUM_OUTPUT_POSITIONS, NUM_OUTPUT_FEATURES, out_bidx_map
+    //read all output positions from the challengeFile (tag)
+    // initializes: NUM_INPUT_POSITIONS, NUM_INPUT_FEATURES, in_bidx_map
     std::ifstream challenge(challengeFile);
     idashParams->NUM_SAMPLES = 0;
     idashParams->NUM_INPUT_POSITIONS = 0;
@@ -58,12 +58,12 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
                 uint8_t snp;
                 iss >> snp;
                 if (!iss) break;
-                REQUIRE_DRAMATICALLY(snp == 0 || snp == 1 || snp == 2, "file format error");
+                REQUIRE_DRAMATICALLY(snp == '0' || snp == '1' || snp == '2', "file format error"); // what happens if first line has an empty field
                 idashParams->NUM_SAMPLES++;
             }
         }
-        idashParams->NUM_INPUT_FEATURES++; //for the constant value
     }
+    idashParams->NUM_INPUT_FEATURES++; //for the constant value
     challenge.close();
 
 
@@ -79,9 +79,13 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
 }
 
 
-int main() {
-    const std::string targetFile;
-    const std::string challengeFile;
+int main(int argc, char** argv) {
+    if (argc < 3) {
+        DIE_DRAMATICALLY("Please provide target and tag files")
+    }
+
+    const std::string targetFile = argv[1];
+    const std::string challengeFile = argv[2];
 
 
     IdashKey *key = keygen(targetFile, challengeFile);
