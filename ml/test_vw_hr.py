@@ -133,3 +133,4 @@ if args.out_dir:
     file_name = "{}/{}.hr".format(args.out_dir, model_name)
     open(file_name, "w").writelines(map(lambda e: '{} {}\n'.format(*e), coeffs.items()))
 
+  df_pred.to_csv("{}/predictions".format(args.out_dir))
