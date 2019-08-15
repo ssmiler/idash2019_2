@@ -470,9 +470,10 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
             res.resize(NUM_SAMPLES);
             // rescale and copy result
             for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
-                res[sample] = plain->coefsT[sample];
+                res[sample] = t32tod(plain->coefsT[sample]);
             }
         }
+        /*
         // renormalize all probabilities
         for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
             double x0 = max<double>(0, predictions.score[outPos][0][sample]);
@@ -491,6 +492,7 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
                 predictions.score[outPos][2][sample] = 1. / 6.;
             }
         }
+         */
     }
 
 /*
@@ -547,11 +549,20 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
             FeatBigIndex inBidx = it2.first;
             int32_t coeff = it2.second;
 
-            FeatRegion region = params.feature_regionOf(inBidx);
-            const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
+            if (inBidx == params.constant_bigIndex()) {
+                //add the constant to all the samples (implicitly) in region 0
+                Torus32 scaled_constant = coeff * params.ONE_IN_T32;
+                for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                    tmp->b->coefsT[sampleId] += scaled_constant;
+                }
+            } else {
+                //add the TLWE to the corresponding region
+                FeatRegion region = params.feature_regionOf(inBidx);
+                const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
 
-            // Multiply the scaled coefficient to the input and add it to the temporary region
-            tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
+                // Multiply the scaled coefficient to the input and add it to the temporary region
+                tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
+            }
         }
 
         // add all regions (rotated) to the output tlw
@@ -564,7 +575,7 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
             // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
             // rotate the tmp regions
             for (int32_t i = 0; i <= k; i++) {
-                torusPolynomialMulByXai(&tmp_rot->a[i], -region * REGION_SIZE, &tmp[region].a[i]);
+                torusPolynomialMulByXai(&tmp_rot->a[i], (2 * N - region * REGION_SIZE) % 2 * N, &tmp[region].a[i]);
             }
             // add the rotation to outTLWE
             tLweAddTo(outTLWE, tmp_rot, tlweParams);

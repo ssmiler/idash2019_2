@@ -16,9 +16,9 @@ int main() {
   compute_score(targetPredictions, data, model, params);
 
   encrypt_data(encryptedData, data, *key);
-  //cloud_compute_score(encPredications, encryptedData, model, params);
-  //decrypt_predictions(resultPredications, encPredications, *key);
+    cloud_compute_score(encPredications, encryptedData, model, params);
+    decrypt_predictions(resultPredications, encPredications, *key);
 
 
-  DecryptedPredictions::testEquals(targetPredictions, targetPredictions, params);
+    DecryptedPredictions::testEquals(targetPredictions, resultPredications, params);
 }
