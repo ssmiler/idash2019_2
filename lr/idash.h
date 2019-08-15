@@ -38,6 +38,11 @@ struct IdashParams {
     //            1 TRLWE packs the N samples
     static const double IN_SCALING_FACTOR;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[
 
+    static const double ONE_IN_D;
+    static const double NAN_0_IN_D;  // one hot encoding of NAN - value for snp 0
+    static const double NAN_1_IN_D;  // one hot encoding of NAN - value for snp 1
+    static const double NAN_2_IN_D;  // one hot encoding of NAN - value for snp 2
+
     static const Torus32 ONE_IN_T32;
     static const Torus32 NAN_0_IN_T32;  // one hot encoding of NAN - value for snp 0
     static const Torus32 NAN_1_IN_T32;  // one hot encoding of NAN - value for snp 1
