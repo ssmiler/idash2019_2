@@ -84,6 +84,7 @@ struct IdashKey {
     const TLweKey *tlweKey;
 
     IdashKey(const IdashParams *idashParams, const TLweKey *tlweKey);
+    IdashKey(){}
 
 };
 
