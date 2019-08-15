@@ -161,7 +161,10 @@ struct DecryptedPredictions {
         for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
             for (const auto &it : params.out_features_index) {
                 const std::string &pos = it.first;
-                if (val1.score.at(pos)[0][sampleId] != val2.score.at(pos)[0][sampleId]) { abort(); };
+                if (val1.score.at(pos)[0][sampleId] != val2.score.at(pos)[0][sampleId]) {
+                    std::cout << val1.score.at(pos)[0][sampleId] << " " << val2.score.at(pos)[0][sampleId] << std::endl;
+                    abort();
+                };
                 if (val1.score.at(pos)[1][sampleId] != val2.score.at(pos)[1][sampleId]) { abort(); };
                 if (val1.score.at(pos)[2][sampleId] != val2.score.at(pos)[2][sampleId]) { abort(); };
             }
