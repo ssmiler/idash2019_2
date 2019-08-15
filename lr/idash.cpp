@@ -403,3 +403,248 @@ void read_key(IdashKey &key, const std::string &filename) {
     inp.close();
 }
 
+void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key) {
+    const IdashParams &params = *key.idashParams;
+    const uint64_t NUM_SAMPLES = params.NUM_SAMPLES;
+    REQUIRE_DRAMATICALLY(plain_data.data.size() == params.NUM_INPUT_POSITIONS, "Incomplete plaintext");
+    //fill enc_data with ciphertexts of zero
+    for (const auto &it: plain_data.data) {
+        const std::string &pos = it.first;
+        const std::vector<int8_t> &values = it.second;
+        REQUIRE_DRAMATICALLY(values.size() == NUM_SAMPLES, "plaintext dimensions inconsistency");
+        enc_data.ensure_exists(params.inBigIdx(pos, 0), key);
+        enc_data.ensure_exists(params.inBigIdx(pos, 1), key);
+        enc_data.ensure_exists(params.inBigIdx(pos, 2), key);
+    }
+    //add the actual scores
+    for (const auto &it: plain_data.data) {
+        const std::string &pos = it.first;
+        const std::vector<int8_t> &values = it.second;
+        for (uint64_t sampleId = 0; sampleId < NUM_SAMPLES; sampleId++) {
+            switch (values[sampleId]) {
+                case 0: {
+                    enc_data.setScore(params.inBigIdx(pos, 0), sampleId, params.ONE_IN_T32, params);
+                }
+                    break;
+                case 1: {
+                    enc_data.setScore(params.inBigIdx(pos, 1), sampleId, params.ONE_IN_T32, params);
+                }
+                    break;
+                case 2: {
+                    enc_data.setScore(params.inBigIdx(pos, 2), sampleId, params.ONE_IN_T32, params);
+                }
+                    break;
+                default: //NAN case
+                {
+                    enc_data.setScore(params.inBigIdx(pos, 0), sampleId, params.NAN_0_IN_T32, params);
+                    enc_data.setScore(params.inBigIdx(pos, 1), sampleId, params.NAN_1_IN_T32, params);
+                    enc_data.setScore(params.inBigIdx(pos, 2), sampleId, params.NAN_2_IN_T32, params);
+                }
+            }
+        }
+    }
+}
+
+void
+decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPredictions &enc_preds, const IdashKey &key) {
+
+    const IdashParams &params = *key.idashParams;
+    const uint64_t NUM_SAMPLES = params.NUM_SAMPLES;
+
+    TorusPolynomial *plain = new_TorusPolynomial(params.N);
+
+    for (const auto &it : params.out_features_index) {
+        const std::string &outPos = it.first;
+        for (int64_t snp = 0; snp < params.NUM_SNP_PER_POSITIONS; snp++) { // for snp in 0,1,2
+            FeatBigIndex outBIdx = it.second[snp];
+            const TLweSample *cipher = enc_preds.score.at(outBIdx);
+            tLwePhase(plain, cipher, key.tlweKey); // -> a rescaler
+            // initialize output
+            std::vector<float> &res = predictions.score[outPos][snp];  // this will create an empty vector in the result
+            res.resize(NUM_SAMPLES);
+            // rescale and copy result
+            for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
+                res[sample] = plain->coefsT[sample];
+            }
+        }
+        // renormalize all probabilities
+        for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
+            double x0 = max<double>(0, predictions.score[outPos][0][sample]);
+            double x1 = max<double>(0, predictions.score[outPos][1][sample]);
+            double x2 = max<double>(0, predictions.score[outPos][2][sample]);
+            double xNorm = x0 + x1 + x2;
+            if (xNorm > 0) {
+                // normalize so that the sum is +1
+                predictions.score[outPos][0][sample] = x0 / xNorm;
+                predictions.score[outPos][1][sample] = x1 / xNorm;
+                predictions.score[outPos][2][sample] = x2 / xNorm;
+            } else {
+                //consider these probas as NAN
+                predictions.score[outPos][0][sample] = 3. / 6.;
+                predictions.score[outPos][1][sample] = 2. / 6.;
+                predictions.score[outPos][2][sample] = 1. / 6.;
+            }
+        }
+    }
+
+/*
+    for (const auto &it : enc_preds.score) {
+
+        FeatBigIndex idx = it.first;
+        predictions.score.first = toString(idx);
+
+        TLweSample *cipher = it.second;
+
+        tLweSymDecrypt(plain, cipher, key.tlweKey, Msize);
+
+        //TODO how to retrieve the 3 probabilities?
+    }
+*/
+
+
+    // DELETE
+    delete_TorusPolynomial(plain);
+}
+
+void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data,
+                         const Model &model, const IdashParams &params) {
+    // ============== apply model over ciphertexts
+    const TLweParams *tlweParams = params.tlweParams;
+    const int32_t k = tlweParams->k;
+    REQUIRE_DRAMATICALLY(k == 1, "blah");
+    const uint32_t N = params.N;
+    const int64_t REGION_SIZE = params.REGION_SIZE;
+
+
+    // We use two temporary ciphertexts, one for region 0 and one for region 1
+    // Only at the end of the loop we rotate region 1 and add it to region 0
+    TLweSample *tmp = new_TLweSample_array(params.NUM_REGIONS, tlweParams);
+
+    // create a temporary value to register the rotations
+    TLweSample *tmp_rot = new_TLweSample(tlweParams);
+
+
+    // for each output feature
+    for (const auto &it : model.model) {
+
+        FeatBigIndex outBidx = it.first;
+        const std::unordered_map<FeatBigIndex, int32_t> &mcoeffs = it.second;
+
+        //clear tmp
+        for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
+            tLweClear(tmp + region, tlweParams);
+        }
+
+        //for each input feature, add it to the corresponding region
+        for (const auto &it2: mcoeffs) {
+
+            FeatBigIndex inBidx = it2.first;
+            int32_t coeff = it2.second;
+
+            FeatRegion region = params.feature_regionOf(inBidx);
+            const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
+
+            // Multiply the scaled coefficient to the input and add it to the temporary region
+            tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
+        }
+
+        // add all regions (rotated) to the output tlw
+        TLweSample *outTLWE = enc_preds.createAndGet(outBidx, tlweParams);
+
+        // Init with tmp region 0
+        tLweCopy(outTLWE, tmp, tlweParams);
+        for (uint64_t region = 1; region < params.NUM_REGIONS; ++region) {
+
+            // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
+            // rotate the tmp regions
+            for (int32_t i = 0; i <= k; i++) {
+                torusPolynomialMulByXai(&tmp_rot->a[i], -region * REGION_SIZE, &tmp[region].a[i]);
+            }
+            // add the rotation to outTLWE
+            tLweAddTo(outTLWE, tmp_rot, tlweParams);
+        }
+
+        //destroy the positions that must remain hidden
+        for (uint64_t j = params.REGION_SIZE; j < N; ++j) {
+            outTLWE->b->coefsT[j] = 0;
+        }
+    }
+
+    // DELETE
+    delete_TLweSample(tmp_rot);
+    delete_TLweSample_array(params.NUM_REGIONS, tmp);
+}
+
+void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
+                   const Model &M, const IdashParams &params) {
+    // ============== apply model over plaintext
+
+    //plaintext one hot encoded
+    std::map<FeatBigIndex, std::vector<double>> plaintext_onehot;
+    for (const auto &it: params.in_features_index) {
+        const std::string &inPos = it.first;
+        for (int inSNP = 0; inSNP < 3; inSNP++) {
+            const FeatBigIndex inBIdx = it.second[inSNP];
+            plaintext_onehot[inBIdx].resize(params.NUM_SAMPLES);
+        }
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            switch (X.data.at(inPos)[sampleId]) {
+                case 0:
+                    plaintext_onehot[it.second[0]][sampleId] = params.ONE_IN_T32;
+                    plaintext_onehot[it.second[1]][sampleId] = 0;
+                    plaintext_onehot[it.second[2]][sampleId] = 0;
+                    break;
+                case 1:
+                    plaintext_onehot[it.second[0]][sampleId] = 0;
+                    plaintext_onehot[it.second[1]][sampleId] = params.ONE_IN_T32;
+                    plaintext_onehot[it.second[2]][sampleId] = 0;
+                    break;
+                case 2:
+                    plaintext_onehot[it.second[0]][sampleId] = 0;
+                    plaintext_onehot[it.second[1]][sampleId] = 0;
+                    plaintext_onehot[it.second[2]][sampleId] = params.ONE_IN_T32;
+                    break;
+                default: //NAN
+                    plaintext_onehot[it.second[0]][sampleId] = params.NAN_0_IN_T32;
+                    plaintext_onehot[it.second[1]][sampleId] = params.NAN_1_IN_T32;
+                    plaintext_onehot[it.second[2]][sampleId] = params.NAN_2_IN_T32;
+                    break;
+            }
+        }
+    }
+
+    for (const auto &it: params.out_features_index) {
+        const std::string &outPos = it.first;
+        for (int outSNP = 0; outSNP < 3; outSNP++) {
+            const FeatBigIndex outBIdx = it.second[outSNP];
+            predictions.score[outPos][outSNP].resize(params.NUM_SAMPLES);
+            for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                predictions.score[outPos][outSNP][sampleId] = 0;
+            }
+            auto &coeffs = M.model.at(outBIdx); //coefficients for this output
+            for (const auto &it2: coeffs) {
+                for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                    //todo see what to do with the constant
+                    if (it2.first == params.constant_bigIndex()) {
+                        predictions.score[outPos][outSNP][sampleId] += it2.second; //TODO constant is already rescale with SCALING_FACTOR?
+                    } else {
+                        predictions.score[outPos][outSNP][sampleId] +=
+                                it2.second * plaintext_onehot[it2.first][sampleId];
+                    }
+                }
+            }
+        }
+        //normalize preds
+        double pred[3];
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            pred[0] = std::max<double>(0, predictions.score[outPos][0][sampleId]);
+            pred[1] = std::max<double>(0, predictions.score[outPos][1][sampleId]);
+            pred[2] = std::max<double>(0, predictions.score[outPos][2][sampleId]);
+            double norm = pred[0] + pred[1] + pred[2];
+            predictions.score[outPos][0][sampleId] = pred[0] / norm;
+            predictions.score[outPos][1][sampleId] = pred[1] / norm;
+            predictions.score[outPos][2][sampleId] = pred[2] / norm;
+        }
+    }
+}
+
