@@ -15,7 +15,7 @@ using namespace std;
 //TRLWE parameters
 //const uint32_t IdashParams::N = 1024;              // TRLWE dimension
 //const uint32_t IdashParams::k = 1;                 // k is always 1
-const double IdashParams::alpha = 0; // pow(2., -20.);   // minimal noise   //TODO put noise back
+const double IdashParams::alpha = pow(2., -20.);   // minimal noise   //TODO put noise back
 //const uint32_t IdashParams::REGION_SIZE = IdashParams::N / IdashParams::NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
 const TLweParams *IdashParams::tlweParams = new_TLweParams(IdashParams::N, IdashParams::k, IdashParams::alpha, 0.25);
 
@@ -587,10 +587,8 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
     delete_TLweSample_array(params.NUM_REGIONS, tmp);
 }
 
-void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
-                   const Model &M, const IdashParams &params) {
+PlaintextOnehot compute_plaintext_onehot(const PlaintextData &X, const IdashParams &params) {
     // ============== apply model over plaintext
-
     //plaintext one hot encoded
     std::map<FeatBigIndex, std::vector<double>> plaintext_onehot;
     for (const auto &it: params.in_features_index) {
@@ -624,6 +622,15 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
             }
         }
     }
+    return plaintext_onehot;
+}
+
+void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
+                   const Model &M, const IdashParams &params) {
+    // ============== apply model over plaintext
+
+    //plaintext one hot encoded
+    std::map<FeatBigIndex, std::vector<double>> plaintext_onehot = compute_plaintext_onehot(X, params);
 
     for (const auto &it: params.out_features_index) {
         const uint64_t &outPos = it.first;
