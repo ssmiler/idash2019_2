@@ -23,17 +23,23 @@ const TLweParams *IdashParams::tlweParams = new_TLweParams(IdashParams::N, Idash
 // enc_data = one hot encoding of input / SCALING_FACTOR
 //            indexed by input feature name_snp: pos_0, pos_1, pos_2
 //            1 TRLWE packs the N samples
-const double IdashParams::IN_SCALING_FACTOR = 100;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
+const double IdashParams::IN_SCALING_FACTOR = 1. / 1024;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
 
-const Torus32 IdashParams::ONE_IN_T32 = Torus32(rint(IN_SCALING_FACTOR));
-const Torus32 IdashParams::NAN_0_IN_T32 = Torus32(
-        rint(3. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 0
-const Torus32 IdashParams::NAN_1_IN_T32 = Torus32(
-        rint(2. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 1
-const Torus32 IdashParams::NAN_2_IN_T32 = Torus32(
-        rint(1. / 6. * IN_SCALING_FACTOR));  // one hot encoding of NAN - value for snp 2
+const double IdashParams::ONE_IN_D = IN_SCALING_FACTOR;
+const double IdashParams::NAN_0_IN_D =
+    3. / 6. * IN_SCALING_FACTOR; // one hot encoding of NAN - value for snp 0
+const double IdashParams::NAN_1_IN_D =
+    2. / 6. * IN_SCALING_FACTOR; // one hot encoding of NAN - value for snp 1
+const double IdashParams::NAN_2_IN_D =
+    1. / 6. * IN_SCALING_FACTOR; // one hot encoding of NAN - value for snp 2
 
-
+const Torus32 IdashParams::ONE_IN_T32 = dtot32(IdashParams::ONE_IN_D);
+const Torus32 IdashParams::NAN_0_IN_T32 = dtot32(
+    IdashParams::NAN_0_IN_D); // one hot encoding of NAN - value for snp 0
+const Torus32 IdashParams::NAN_1_IN_T32 = dtot32(
+    IdashParams::NAN_1_IN_D); // one hot encoding of NAN - value for snp 1
+const Torus32 IdashParams::NAN_2_IN_T32 = dtot32(
+    IdashParams::NAN_2_IN_D); // one hot encoding of NAN - value for snp 2
 
 /**
  * @brief      Split a string in format "pos_val" into a pair <pos,val>
@@ -590,24 +596,24 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
         for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
             switch (X.data.at(inPos)[sampleId]) {
                 case 0:
-                    plaintext_onehot[it.second[0]][sampleId] = params.ONE_IN_T32;
+                    plaintext_onehot[it.second[0]][sampleId] = params.ONE_IN_D;
                     plaintext_onehot[it.second[1]][sampleId] = 0;
                     plaintext_onehot[it.second[2]][sampleId] = 0;
                     break;
                 case 1:
                     plaintext_onehot[it.second[0]][sampleId] = 0;
-                    plaintext_onehot[it.second[1]][sampleId] = params.ONE_IN_T32;
+                    plaintext_onehot[it.second[1]][sampleId] = params.ONE_IN_D;
                     plaintext_onehot[it.second[2]][sampleId] = 0;
                     break;
                 case 2:
                     plaintext_onehot[it.second[0]][sampleId] = 0;
                     plaintext_onehot[it.second[1]][sampleId] = 0;
-                    plaintext_onehot[it.second[2]][sampleId] = params.ONE_IN_T32;
+                    plaintext_onehot[it.second[2]][sampleId] = params.ONE_IN_D;
                     break;
                 default: //NAN
-                    plaintext_onehot[it.second[0]][sampleId] = params.NAN_0_IN_T32;
-                    plaintext_onehot[it.second[1]][sampleId] = params.NAN_1_IN_T32;
-                    plaintext_onehot[it.second[2]][sampleId] = params.NAN_2_IN_T32;
+                    plaintext_onehot[it.second[0]][sampleId] = params.NAN_0_IN_D;
+                    plaintext_onehot[it.second[1]][sampleId] = params.NAN_1_IN_D;
+                    plaintext_onehot[it.second[2]][sampleId] = params.NAN_2_IN_D;
                     break;
             }
         }
@@ -617,16 +623,15 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
         const std::string &outPos = it.first;
         for (int outSNP = 0; outSNP < 3; outSNP++) {
             const FeatBigIndex outBIdx = it.second[outSNP];
-            predictions.score[outPos][outSNP].resize(params.NUM_SAMPLES);
-            for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-                predictions.score[outPos][outSNP][sampleId] = 0;
-            }
+            predictions.score[outPos][outSNP].clear();
+            predictions.score[outPos][outSNP].resize(params.NUM_SAMPLES, 0);
             auto &coeffs = M.model.at(outBIdx); //coefficients for this output
             for (const auto &it2: coeffs) {
                 for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
                     //todo see what to do with the constant
                     if (it2.first == params.constant_bigIndex()) {
-                        predictions.score[outPos][outSNP][sampleId] += it2.second; //TODO constant is already rescale with SCALING_FACTOR?
+                        predictions.score[outPos][outSNP][sampleId] +=
+                                it2.second * IdashParams::ONE_IN_D;
                     } else {
                         predictions.score[outPos][outSNP][sampleId] +=
                                 it2.second * plaintext_onehot[it2.first][sampleId];
@@ -634,17 +639,17 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
                 }
             }
         }
-        //normalize preds
-        double pred[3];
-        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-            pred[0] = std::max<double>(0, predictions.score[outPos][0][sampleId]);
-            pred[1] = std::max<double>(0, predictions.score[outPos][1][sampleId]);
-            pred[2] = std::max<double>(0, predictions.score[outPos][2][sampleId]);
-            double norm = pred[0] + pred[1] + pred[2];
-            predictions.score[outPos][0][sampleId] = pred[0] / norm;
-            predictions.score[outPos][1][sampleId] = pred[1] / norm;
-            predictions.score[outPos][2][sampleId] = pred[2] / norm;
-        }
+        // //normalize preds
+        // double pred[3];
+        // for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+        //     pred[0] = std::max<double>(0, predictions.score[outPos][0][sampleId]);
+        //     pred[1] = std::max<double>(0, predictions.score[outPos][1][sampleId]);
+        //     pred[2] = std::max<double>(0, predictions.score[outPos][2][sampleId]);
+        //     double norm = pred[0] + pred[1] + pred[2];
+        //     predictions.score[outPos][0][sampleId] = pred[0] / norm;
+        //     predictions.score[outPos][1][sampleId] = pred[1] / norm;
+        //     predictions.score[outPos][2][sampleId] = pred[2] / norm;
+        // }
     }
 }
 
