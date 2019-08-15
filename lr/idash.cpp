@@ -44,12 +44,13 @@ const Torus32 IdashParams::NAN_2_IN_T32 = dtot32(
 /**
  * @brief      Split a string in format "pos_val" into a pair <pos,val>
  */
-pair<string, uint8_t> split(const string &buf) {
+pair<uint64_t, uint8_t> split(const string &buf) {
     auto k = buf.find('_');
 
     string snp = buf.substr(0, k);
+    uint64_t pos = stol(snp);
     uint8_t val = stoi(buf.substr(k + 1));
-    return make_pair(snp, val);
+    return make_pair(pos, val);
 }
 
 /**
@@ -61,11 +62,11 @@ pair<string, uint8_t> split(const string &buf) {
  */
 void read_model(Model &model, const IdashParams &params, const string &path) {
     for (const auto &elem: params.out_features_index) {
-        string pos = elem.first;
+        uint64_t pos = elem.first;
         auto out_bindices = elem.second;
 
         for (int snp = 0; snp < 3; ++snp) {
-            string file_name = path + "/" + pos + "_" + to_string(snp) + ".hr";
+            string file_name = path + "/" + to_string(pos) + "_" + to_string(snp) + ".hr";
             unordered_map<string, int32_t> coefs = read(file_name);
 
             FeatBigIndex out_bidx = out_bindices[snp];
@@ -138,12 +139,13 @@ void write_params_ostream(const IdashParams &params, ostream &out) {
                          "NUM_INPUT_POSITIONS != in_features_index.size()");
 
     for (const auto &e1 : params.in_features_index) {
-        string pos = e1.first;
+        uint64_t pos = e1.first;
 
         // write feature position
-        size_t pos_size = pos.size();
-        ostream_write_binary(out, &pos_size, sizeof(size_t));
-        ostream_write_binary(out, pos.c_str(), sizeof(char) * pos.size());
+        ostream_write_binary(out, &pos, sizeof(uint64_t));
+        //size_t pos_size = pos.size();
+        //ostream_write_binary(out, &pos_size, sizeof(size_t));
+        //ostream_write_binary(out, pos.c_str(), sizeof(char) * pos.size());
 
         // write snps
         for (const FeatBigIndex e2 : e1.second) {
@@ -156,12 +158,13 @@ void write_params_ostream(const IdashParams &params, ostream &out) {
                          "NUM_OUTPUT_POSITIONS != out_features_index.size()");
 
     for (const auto &e1 : params.out_features_index) {
-        string pos = e1.first;
+        uint64_t pos = e1.first;
 
         // write feature position
-        size_t pos_size = pos.size();
-        ostream_write_binary(out, &pos_size, sizeof(size_t));
-        ostream_write_binary(out, pos.c_str(), sizeof(char) * pos.size());
+        ostream_write_binary(out, &pos, sizeof(uint64_t));
+        //size_t pos_size = pos.size();
+        //ostream_write_binary(out, &pos_size, sizeof(size_t));
+        //ostream_write_binary(out, pos.c_str(), sizeof(char) * pos.size());
 
         // write snps
         for (const FeatBigIndex e2 : e1.second) {
@@ -195,20 +198,15 @@ void read_params_istream(IdashParams &params, istream &inp) {
     istream_read_binary(inp, &params.NUM_OUTPUT_FEATURES,
                         sizeof(params.NUM_OUTPUT_FEATURES));
 
-    char buff[256];
-
     for (uint32_t i = 0; i < params.NUM_INPUT_POSITIONS; ++i) {
-        size_t pos_size;
+        uint64_t pos;
 
         // read feature position
-        istream_read_binary(inp, &pos_size, sizeof(size_t));
-        REQUIRE_DRAMATICALLY(pos_size < 255, "buffer overflow");
-        istream_read_binary(inp, buff, pos_size);
-        buff[pos_size + 1] = '\0';
+        istream_read_binary(inp, &pos, sizeof(uint64_t));
 
         // read snps
-        params.in_features_index.emplace(buff, array<FeatBigIndex, 3>());
-        auto &tmp = params.in_features_index.at(buff);
+        params.in_features_index.emplace(pos, array<FeatBigIndex, 3>());
+        auto &tmp = params.in_features_index.at(pos);
         for (int j = 0; j < 3; ++j) {
             istream_read_binary(inp, &tmp[j], sizeof(FeatBigIndex));
         }
@@ -219,17 +217,14 @@ void read_params_istream(IdashParams &params, istream &inp) {
                          "NUM_INPUT_POSITIONS != in_features_index.size()");
 
     for (uint32_t i = 0; i < params.NUM_OUTPUT_POSITIONS; ++i) {
-        size_t pos_size;
+        uint64_t pos;
 
         // read feature position
-        istream_read_binary(inp, &pos_size, sizeof(size_t));
-        REQUIRE_DRAMATICALLY(pos_size < 255, "buffer overflow");
-        istream_read_binary(inp, buff, pos_size);
-        buff[pos_size + 1] = '\0';
+        istream_read_binary(inp, &pos, sizeof(uint64_t));
 
         // read snps
-        params.out_features_index.emplace(buff, array<FeatBigIndex, 3>());
-        auto &tmp = params.out_features_index.at(buff);
+        params.out_features_index.emplace(pos, array<FeatBigIndex, 3>());
+        auto &tmp = params.out_features_index.at(pos);
         for (int j = 0; j < 3; ++j) {
             istream_read_binary(inp, &tmp[j], sizeof(FeatBigIndex));
         }
@@ -261,8 +256,8 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
     for (std::getline(challenge, line); challenge; std::getline(challenge, line)) {
         std::istringstream iss(line);
         int blah = 0; // must be 1 in the file
-        std::string position;
-        std::string position2;
+        uint64_t position;
+        uint64_t position2;
         std::string featureName;
         iss >> blah;
         REQUIRE_DRAMATICALLY(blah == 1, "file format error");
@@ -299,7 +294,7 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     for (std::getline(target, line); target; std::getline(target, line)) {
         std::istringstream iss(line);
         int blah = 0; // must be 1 in the file
-        std::string position;
+        uint64_t position;
         iss >> blah;
         REQUIRE_DRAMATICALLY(blah == 1, "file format error");
         iss >> position;
@@ -320,7 +315,7 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     for (std::getline(challenge, line); challenge; std::getline(challenge, line)) {
         std::istringstream iss(line);
         int blah = 0; // must be 1 in the file
-        std::string position;
+        uint64_t position;
         iss >> blah;
         REQUIRE_DRAMATICALLY(blah == 1, "file format error");
         iss >> position;
@@ -365,7 +360,7 @@ void write_decrypted_predictions(const DecryptedPredictions &predictions, const 
     out << "Subject ID,target SNP,0,1,2" << endl;
     for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
         for (const auto &it : predictions.score) {
-            const std::string &position = it.first;
+            const uint64_t &position = it.first;
             out << sampleId << ",";
             out << position << ",";
             out << it.second[0][sampleId] << ",";
@@ -415,7 +410,7 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
     REQUIRE_DRAMATICALLY(plain_data.data.size() == params.NUM_INPUT_POSITIONS, "Incomplete plaintext");
     //fill enc_data with ciphertexts of zero
     for (const auto &it: plain_data.data) {
-        const std::string &pos = it.first;
+        const uint64_t &pos = it.first;
         const std::vector<int8_t> &values = it.second;
         REQUIRE_DRAMATICALLY(values.size() == NUM_SAMPLES, "plaintext dimensions inconsistency");
         enc_data.ensure_exists(params.inBigIdx(pos, 0), key);
@@ -424,7 +419,7 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
     }
     //add the actual scores
     for (const auto &it: plain_data.data) {
-        const std::string &pos = it.first;
+        const uint64_t &pos = it.first;
         const std::vector<int8_t> &values = it.second;
         for (uint64_t sampleId = 0; sampleId < NUM_SAMPLES; sampleId++) {
             switch (values[sampleId]) {
@@ -460,7 +455,7 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
     TorusPolynomial *plain = new_TorusPolynomial(params.N);
 
     for (const auto &it : params.out_features_index) {
-        const std::string &outPos = it.first;
+        const uint64_t &outPos = it.first;
         for (int64_t snp = 0; snp < params.NUM_SNP_PER_POSITIONS; snp++) { // for snp in 0,1,2
             FeatBigIndex outBIdx = it.second[snp];
             const TLweSample *cipher = enc_preds.score.at(outBIdx);
@@ -599,7 +594,7 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
     //plaintext one hot encoded
     std::map<FeatBigIndex, std::vector<double>> plaintext_onehot;
     for (const auto &it: params.in_features_index) {
-        const std::string &inPos = it.first;
+        const uint64_t &inPos = it.first;
         for (int inSNP = 0; inSNP < 3; inSNP++) {
             const FeatBigIndex inBIdx = it.second[inSNP];
             plaintext_onehot[inBIdx].resize(params.NUM_SAMPLES);
@@ -631,7 +626,7 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
     }
 
     for (const auto &it: params.out_features_index) {
-        const std::string &outPos = it.first;
+        const uint64_t &outPos = it.first;
         for (int outSNP = 0; outSNP < 3; outSNP++) {
             const FeatBigIndex outBIdx = it.second[outSNP];
             predictions.score[outPos][outSNP].clear();
