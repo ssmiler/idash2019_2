@@ -23,6 +23,7 @@ set(PROG_SRC
 if (APPLE)
     set(LIBTFHE tfhe-nayuki-portable)
 else ()
+    #set(LIBTFHE tfhe-nayuki-portable)
     set(LIBTFHE tfhe-spqlios-fma)
 endif (APPLE)
 
