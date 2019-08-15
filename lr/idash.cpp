@@ -247,6 +247,11 @@ void read_params(IdashParams &params, const string &filename) {
 }
 
 
+
+
+
+
+
 void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idashParams, const std::string &filename) {
     ifstream challenge(filename);
     REQUIRE_DRAMATICALLY(challenge, "file not found");
@@ -403,3 +408,75 @@ void read_key(IdashKey &key, const std::string &filename) {
     inp.close();
 }
 
+
+
+
+
+
+/************************************************************************
+************************** ENCRYPTED DATA *******************************
+************************************************************************/
+
+
+
+
+void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename);
+
+void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename)
+{
+    ifstream inp(filename.c_str(), ios::binary);
+    REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open encrypted data file for read");
+
+    // read the file line by line
+    std::string line;
+    int64_t numPositionsRead = 0;
+
+    for (std::getline(inp, line); inp; std::getline(inp, line)) {
+
+        std::istringstream iss(line);
+        int blah = 0; // must be 1 in the file
+
+        FeatIndex position;
+        FeatIndex position2;
+        FeatIndex featureName;
+        iss >> blah;
+        REQUIRE_DRAMATICALLY(blah == 1, "file format error");
+
+        iss >> position;
+        iss >> position2;
+        iss >> featureName;
+        REQUIRE_DRAMATICALLY(iss, "file format error");
+
+
+        
+        TLweSample *sample = encrypted_data.enc_data[position];
+        sample.
+
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            uint64_t snp;
+            iss >> snp;
+            REQUIRE_DRAMATICALLY(iss && (snp == 0 || snp == 1 || snp == 2), "file format error");
+            sample[sampleId] = snp;
+        }
+        numPositionsRead++;
+    }
+    REQUIRE_DRAMATICALLY(numPositionsRead == params.NUM_INPUT_POSITIONS, "missing positions in plaintext file");
+
+
+
+
+
+
+    inp.close();
+}
+
+
+
+
+
+
+void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, const IdashParams &params,
+                                 const std::string &filename);
+
+void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const IdashParams &params,
+                                const std::string &filename);
