@@ -424,13 +424,11 @@ void read_key(IdashKey &key, const std::string &filename) {
 
 
 
-/*
-void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename);
 
 void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename)
 {
-    ifstream inp(filename.c_str(), ios::binary);
-    REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open encrypted data file for read");
+    ifstream inp(filename);
+    REQUIRE_DRAMATICALLY(inp, "Encrypted data file not found");
 
     // read the file line by line
     std::string line;
@@ -452,30 +450,19 @@ void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &param
         iss >> featureName;
         REQUIRE_DRAMATICALLY(iss, "file format error");
 
-
-        
         TLweSample *sample = encrypted_data.enc_data[position];
-        sample.
+        import_tlweSample_fromStream(inp, sample, params.tlweParams);
 
-        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-            uint64_t snp;
-            iss >> snp;
-            REQUIRE_DRAMATICALLY(iss && (snp == 0 || snp == 1 || snp == 2), "file format error");
-            sample[sampleId] = snp;
-        }
         numPositionsRead++;
     }
-    REQUIRE_DRAMATICALLY(numPositionsRead == params.NUM_INPUT_POSITIONS, "missing positions in plaintext file");
-
-
-
-
-
+    REQUIRE_DRAMATICALLY(numPositionsRead == params.NUM_INPUT_POSITIONS, "missing positions in encrypted file");
 
     inp.close();
 }
 
 
+/*
+void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename);
 
 
 
