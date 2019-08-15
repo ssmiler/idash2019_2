@@ -117,7 +117,7 @@ void istream_read_binary(istream &in, void *data, const uint64_t size) {
 void write_params(const IdashParams &params, const string &filename) {
   ofstream out(filename.c_str(), ios::binary);
 
-  REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open parameters file for write")
+  REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open parameters file for write");
 
   ostream_write_binary(out, &params.NUM_SAMPLES, sizeof(params.NUM_SAMPLES));
   ostream_write_binary(out, &params.NUM_INPUT_POSITIONS,
@@ -131,7 +131,7 @@ void write_params(const IdashParams &params, const string &filename) {
 
   REQUIRE_DRAMATICALLY(params.NUM_INPUT_POSITIONS ==
                            params.in_features_index.size(),
-                       "NUM_INPUT_POSITIONS != in_features_index.size()")
+                       "NUM_INPUT_POSITIONS != in_features_index.size()");
 
   for (const auto &e1 : params.in_features_index) {
     string pos = e1.first;
@@ -149,7 +149,7 @@ void write_params(const IdashParams &params, const string &filename) {
 
   REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
                            params.out_features_index.size(),
-                       "NUM_OUTPUT_POSITIONS != out_features_index.size()")
+                       "NUM_OUTPUT_POSITIONS != out_features_index.size()");
 
   for (const auto &e1 : params.out_features_index) {
     string pos = e1.first;
@@ -171,7 +171,7 @@ void write_params(const IdashParams &params, const string &filename) {
 void read_params(IdashParams &params, const string &filename) {
   ifstream inp(filename.c_str(), ios::binary);
 
-  REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open parameters file for read")
+  REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open parameters file for read");
 
   istream_read_binary(inp, &params.NUM_SAMPLES, sizeof(params.NUM_SAMPLES));
   istream_read_binary(inp, &params.NUM_INPUT_POSITIONS,
@@ -204,7 +204,7 @@ void read_params(IdashParams &params, const string &filename) {
 
   REQUIRE_DRAMATICALLY(params.NUM_INPUT_POSITIONS ==
                            params.in_features_index.size(),
-                       "NUM_INPUT_POSITIONS != in_features_index.size()")
+                       "NUM_INPUT_POSITIONS != in_features_index.size()");
 
   for (uint32_t i = 0; i < params.NUM_OUTPUT_POSITIONS; ++i) {
     size_t pos_size;
@@ -225,7 +225,7 @@ void read_params(IdashParams &params, const string &filename) {
 
   REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
                            params.out_features_index.size(),
-                       "NUM_OUTPUT_POSITIONS != out_features_index.size()")
+                       "NUM_OUTPUT_POSITIONS != out_features_index.size()");
 
   inp.close();
 }
@@ -353,3 +353,47 @@ void write_decrypted_predictions(const DecryptedPredictions &predictions, const 
     }
     out.close();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/************************************************************************
+****************************** KEY **************************************
+************************************************************************/
+
+void write_key(const IdashKey &key, const std::string &filename){
+
+  ofstream out(filename.c_str(), ios::binary);
+  REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open key file for write");
+
+  write_params(*key->idashParams, filename);
+
+  ostream_write_binary(out, &key.tlweKey, sizeof(key.tlweKey));
+  write_tLweKey(out, *key->tlweKey);
+
+  out.close();
+}
+
+void read_key(IdashKey &key, const std::string &filename){
+
+  ifstream inp(filename.c_str(), ios::binary);
+  REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open key file for read");
+
+  read_params(*key->idashParams, filename);
+  
+  istream_read_binary(inp, &key.tlweKey, sizeof(key.tlweKey));
+  read_new_tLweKey(inp);  
+
+  inp.close();
+}
+

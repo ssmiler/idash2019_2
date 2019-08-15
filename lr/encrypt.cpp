@@ -18,7 +18,7 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
     for (const auto &it: plain_data.data) {
         const std::string &pos = it.first;
         const std::vector<int8_t> &values = it.second;
-        REQUIRE_DRAMATICALLY(values.size() == NUM_SAMPLES, "plaintext dimensions inconsistency")
+        REQUIRE_DRAMATICALLY(values.size() == NUM_SAMPLES, "plaintext dimensions inconsistency");
         enc_data.ensure_exists(params.inBigIdx(pos, 0), key);
         enc_data.ensure_exists(params.inBigIdx(pos, 1), key);
         enc_data.ensure_exists(params.inBigIdx(pos, 2), key);
