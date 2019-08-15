@@ -153,6 +153,22 @@ struct DecryptedPredictions {
     // predictions: for each output feature and snip, 1 vector containing the score of the N samples
     // output features are indexed by name (pos)
     std::unordered_map<std::string, std::array<std::vector<float>, 3> > score;
+
+    //verify if two DecryptedValues are equals
+    static bool
+    testEquals(const DecryptedPredictions &val1, const DecryptedPredictions &val2, const IdashParams &params) {
+
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            for (const auto &it : params.out_features_index) {
+                const std::string &pos = it.first;
+                if (val1.score.at(pos)[0][sampleId] != val2.score.at(pos)[0][sampleId]) { abort(); };
+                if (val1.score.at(pos)[1][sampleId] != val2.score.at(pos)[1][sampleId]) { abort(); };
+                if (val1.score.at(pos)[2][sampleId] != val2.score.at(pos)[2][sampleId]) { abort(); };
+            }
+
+        }
+        return true;
+    }
 };
 
 void write_params(const IdashParams &params, const std::string &filename);
