@@ -119,13 +119,20 @@ for target_snp in target_snps:
     except:
       vals.append("")
 
-  vals.append(sklearn.metrics.roc_auc_score(y_test.values, y_pred.values, average='micro'))
+  vals.append(sklearn.metrics.roc_auc_score(y_test.values, y_pred.values , average='micro'))
   vals_dict[target_snp] = dict(zip(["auc_0","auc_1","auc_2","auc"], vals))
 
 df_vals = pd.DataFrame(vals_dict).T
 df_vals.sort_index(inplace=True)
 print(df_vals.to_string())
 print("Mean AUC score: {}".format(df_vals.auc.mean()))
+
+df_test = np.zeros(shape=df_pred.shape, dtype = int)
+for target_snp in target_snps:
+  for k in range(3):
+    df_test[:, df_pred.columns == target_snp + '_' + str(k)] = ((df_target.loc[:,int(target_snp)] == k)+0).values.reshape(-1,1)
+print("Micro-AUC score: {}".format(sklearn.metrics.roc_auc_score(df_test, df_pred, average='micro')))
+
 
 if args.out_dir:
   for model_name, coeffs in df_model.items():
