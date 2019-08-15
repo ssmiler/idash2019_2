@@ -461,11 +461,24 @@ void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &param
 }
 
 
+
+void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename)
+{
+    ofstream out(filename);
+    REQUIRE_DRAMATICALLY(out, "Cannot open encrypted data file for write");
+
+    out << "Shall we print something???" << endl;
+
+    for (const auto &it : encrypted_data.enc_data) {
+        const FeatIndex &idx = it.first;
+        export_tlweSample_toStream(out, encrypted_data.getTLWE(idx, params), params.tlweParams);
+    }
+
+    out.close();
+}
+
+
 /*
-void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename);
-
-
-
 
 void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, const IdashParams &params,
                                  const std::string &filename);
