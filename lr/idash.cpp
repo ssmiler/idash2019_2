@@ -114,10 +114,10 @@ void istream_read_binary(istream &in, void *data, const uint64_t size) {
   in.read((char *)data, size);
 }
 
-void write_params(const IdashParams &params, const string &filename) {
-  ofstream out(filename.c_str(), ios::binary);
 
-  REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open parameters file for write");
+
+
+void write_params_ofstream(const IdashParams &params, const ofstream &out) {
 
   ostream_write_binary(out, &params.NUM_SAMPLES, sizeof(params.NUM_SAMPLES));
   ostream_write_binary(out, &params.NUM_INPUT_POSITIONS,
@@ -165,14 +165,27 @@ void write_params(const IdashParams &params, const string &filename) {
     }
   }
 
+}
+
+
+
+void write_params(const IdashParams &params, const string &filename) {
+  ofstream out(filename.c_str(), ios::binary);
+
+  REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open parameters file for write");
+
+  write_params_ofstream(&params, &out);
+
   out.close();
 }
 
-void read_params(IdashParams &params, const string &filename) {
-  ifstream inp(filename.c_str(), ios::binary);
 
-  REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open parameters file for read");
 
+
+
+
+void read_params_ifstream(IdashParams &params, const ifstream &inp) {
+  
   istream_read_binary(inp, &params.NUM_SAMPLES, sizeof(params.NUM_SAMPLES));
   istream_read_binary(inp, &params.NUM_INPUT_POSITIONS,
            sizeof(params.NUM_INPUT_POSITIONS));
@@ -226,6 +239,16 @@ void read_params(IdashParams &params, const string &filename) {
   REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
                            params.out_features_index.size(),
                        "NUM_OUTPUT_POSITIONS != out_features_index.size()");
+
+}
+
+
+void read_params(IdashParams &params, const string &filename) {
+  ifstream inp(filename.c_str(), ios::binary);
+
+  REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open parameters file for read");
+
+  read_params_ifstream(&params, &inp);
 
   inp.close();
 }
@@ -376,10 +399,9 @@ void write_key(const IdashKey &key, const std::string &filename){
   ofstream out(filename.c_str(), ios::binary);
   REQUIRE_DRAMATICALLY(out.is_open(), "Cannot open key file for write");
 
-  write_params(*key->idashParams, filename);
 
-  ostream_write_binary(out, &key.tlweKey, sizeof(key.tlweKey));
-  write_tLweKey(out, *key->tlweKey);
+  write_params_ofstream(*key->idashParams, out);
+  export_tlweKey_toStream(out, *key.tlweKey);
 
   out.close();
 }
@@ -389,10 +411,8 @@ void read_key(IdashKey &key, const std::string &filename){
   ifstream inp(filename.c_str(), ios::binary);
   REQUIRE_DRAMATICALLY(inp.is_open(), "Cannot open key file for read");
 
-  read_params(*key->idashParams, filename);
-  
-  istream_read_binary(inp, &key.tlweKey, sizeof(key.tlweKey));
-  read_new_tLweKey(inp);  
+  read_params_ifstream(*key->idashParams, inp);
+  export_tlweKey_toStream(inp, *key.tlweKey);
 
   inp.close();
 }
