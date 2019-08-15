@@ -1,7 +1,6 @@
 #include "idash.h"
 
 
-
 int main() {
     Model model;
     PlaintextData data;
