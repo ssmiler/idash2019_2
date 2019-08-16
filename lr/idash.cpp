@@ -569,8 +569,9 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
 
             // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
             // rotate the tmp regions
+            int32_t rotation_amount = 2 * N - region * REGION_SIZE;
             for (int32_t i = 0; i <= k; i++) {
-                torusPolynomialMulByXai(&tmp_rot->a[i], (2 * N - region * REGION_SIZE) % 2 * N, &tmp[region].a[i]);
+                torusPolynomialMulByXai(&tmp_rot->a[i], rotation_amount, &(&tmp[region])->a[i]);
             }
             // add the rotation to outTLWE
             tLweAddTo(outTLWE, tmp_rot, tlweParams);
