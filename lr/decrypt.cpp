@@ -22,6 +22,6 @@ int main() {
     read_key(key, "key_file");
     read_encrypted_predictions(enc_predictions, *key.idashParams, "enc_prediction_file");
     decrypt_predictions(dec_predictions, enc_predictions, key);
-    write_decrypted_predictions(dec_predictions, *key.idashParams, "dec_prediction_file");
+    write_decrypted_predictions(dec_predictions, *key.idashParams, "dec_prediction_file", 0);
 }
 
