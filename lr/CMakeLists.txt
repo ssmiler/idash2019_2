@@ -18,6 +18,7 @@ set(PROG_SRC
         cloud.cpp
         decrypt.cpp
         validation.cpp
+        validation2.cpp
         plaintext_algo.cpp)
 
 if (APPLE)
