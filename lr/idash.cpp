@@ -15,7 +15,8 @@ using namespace std;
 //TRLWE parameters
 //const uint32_t IdashParams::N = 1024;              // TRLWE dimension
 //const uint32_t IdashParams::k = 1;                 // k is always 1
-const double IdashParams::alpha = pow(2., -20.);   // minimal noise   //TODO check the correct value for alpha
+const double IdashParams::alpha = pow(2.,
+                                      -20.);   // minimal noise  (around 190 bits of security regarding the standardization document)
 //const uint32_t IdashParams::REGION_SIZE = IdashParams::N / IdashParams::NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
 const TLweParams *IdashParams::tlweParams = new_TLweParams(IdashParams::N, IdashParams::k, IdashParams::alpha, 0.25);
 
@@ -282,7 +283,7 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
 IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile) {
 
     IdashParams *idashParams = new IdashParams();
-    const TLweKey *tlweKey;
+    TLweKey *tlweKey;
 
     std::string line;
 
@@ -350,6 +351,7 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     REQUIRE_DRAMATICALLY(idashParams->REGION_SIZE >= idashParams->NUM_SAMPLES, "REGION_SIZE must be >= NUM_SAMPLES ");
 
     tlweKey = new_TLweKey(idashParams->tlweParams);
+    tLweKeyGen(tlweKey);
     IdashKey *key = new IdashKey(idashParams, tlweKey);
     return key;
 }
@@ -465,9 +467,10 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
             res.resize(NUM_SAMPLES);
             // rescale and copy result
             for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
-                res[sample] = plain->coefsT[sample];
+                res[sample] = t32tod(plain->coefsT[sample]);
             }
         }
+        /*
         // renormalize all probabilities
         for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
             double x0 = max<double>(0, predictions.score[outPos][0][sample]);
@@ -486,6 +489,7 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
                 predictions.score[outPos][2][sample] = 1. / 6.;
             }
         }
+         */
     }
 
 /*
@@ -542,11 +546,20 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
             FeatBigIndex inBidx = it2.first;
             int32_t coeff = it2.second;
 
-            FeatRegion region = params.feature_regionOf(inBidx);
-            const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
+            if (inBidx == params.constant_bigIndex()) {
+                //add the constant to all the samples (implicitly) in region 0
+                Torus32 scaled_constant = coeff * params.ONE_IN_T32;
+                for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                    tmp->b->coefsT[sampleId] += scaled_constant;
+                }
+            } else {
+                //add the TLWE to the corresponding region
+                FeatRegion region = params.feature_regionOf(inBidx);
+                const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
 
-            // Multiply the scaled coefficient to the input and add it to the temporary region
-            tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
+                // Multiply the scaled coefficient to the input and add it to the temporary region
+                tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
+            }
         }
 
         // add all regions (rotated) to the output tlw
@@ -558,8 +571,9 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
 
             // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
             // rotate the tmp regions
+            int32_t rotation_amount = 2 * N - region * REGION_SIZE;
             for (int32_t i = 0; i <= k; i++) {
-                torusPolynomialMulByXai(&tmp_rot->a[i], -region * REGION_SIZE, &tmp[region].a[i]);
+                torusPolynomialMulByXai(&tmp_rot->a[i], rotation_amount, &(&tmp[region])->a[i]);
             }
             // add the rotation to outTLWE
             tLweAddTo(outTLWE, tmp_rot, tlweParams);
@@ -576,10 +590,8 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
     delete_TLweSample_array(params.NUM_REGIONS, tmp);
 }
 
-void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
-                   const Model &M, const IdashParams &params) {
+PlaintextOnehot compute_plaintext_onehot(const PlaintextData &X, const IdashParams &params) {
     // ============== apply model over plaintext
-
     //plaintext one hot encoded
     std::map<FeatBigIndex, std::vector<double>> plaintext_onehot;
     for (const auto &it: params.in_features_index) {
@@ -613,6 +625,15 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
             }
         }
     }
+    return plaintext_onehot;
+}
+
+void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
+                   const Model &M, const IdashParams &params) {
+    // ============== apply model over plaintext
+
+    //plaintext one hot encoded
+    std::map<FeatBigIndex, std::vector<double>> plaintext_onehot = compute_plaintext_onehot(X, params);
 
     for (const auto &it: params.out_features_index) {
         const uint64_t &outPos = it.first;
