@@ -163,10 +163,16 @@ struct DecryptedPredictions {
                 const uint64_t &pos = it.first;
                 if (val1.score.at(pos)[0][sampleId] != val2.score.at(pos)[0][sampleId]) {
                     std::cout << val1.score.at(pos)[0][sampleId] << " " << val2.score.at(pos)[0][sampleId] << std::endl;
-                    abort();
+                    //abort();
                 };
-                if (val1.score.at(pos)[1][sampleId] != val2.score.at(pos)[1][sampleId]) { abort(); };
-                if (val1.score.at(pos)[2][sampleId] != val2.score.at(pos)[2][sampleId]) { abort(); };
+                if (val1.score.at(pos)[1][sampleId] != val2.score.at(pos)[1][sampleId]) {
+                    std::cout << val1.score.at(pos)[1][sampleId] << " " << val2.score.at(pos)[1][sampleId] << std::endl;
+                    //abort();
+                };
+                if (val1.score.at(pos)[2][sampleId] != val2.score.at(pos)[2][sampleId]) {
+                    std::cout << val1.score.at(pos)[2][sampleId] << " " << val2.score.at(pos)[2][sampleId] << std::endl;
+                    //abort();
+                };
             }
 
         }
