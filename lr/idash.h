@@ -153,6 +153,31 @@ struct DecryptedPredictions {
     // predictions: for each output feature and snip, 1 vector containing the score of the N samples
     // output features are indexed by name (pos)
     std::unordered_map<uint64_t, std::array<std::vector<float>, 3> > score;
+
+    //verify if two DecryptedValues are equals
+    static bool
+    testEquals(const DecryptedPredictions &val1, const DecryptedPredictions &val2, const IdashParams &params) {
+
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            for (const auto &it : params.out_features_index) {
+                const uint64_t &pos = it.first;
+                if (val1.score.at(pos)[0][sampleId] != val2.score.at(pos)[0][sampleId]) {
+                    std::cout << val1.score.at(pos)[0][sampleId] << " " << val2.score.at(pos)[0][sampleId] << std::endl;
+                    //abort();
+                };
+                if (val1.score.at(pos)[1][sampleId] != val2.score.at(pos)[1][sampleId]) {
+                    std::cout << val1.score.at(pos)[1][sampleId] << " " << val2.score.at(pos)[1][sampleId] << std::endl;
+                    //abort();
+                };
+                if (val1.score.at(pos)[2][sampleId] != val2.score.at(pos)[2][sampleId]) {
+                    std::cout << val1.score.at(pos)[2][sampleId] << " " << val2.score.at(pos)[2][sampleId] << std::endl;
+                    //abort();
+                };
+            }
+
+        }
+        return true;
+    }
 };
 
 void write_params(const IdashParams &params, const std::string &filename);
@@ -188,6 +213,10 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
                          const IdashParams &params);
 
 void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPredictions &enc_preds, const IdashKey &key);
+
+typedef std::map<FeatBigIndex, std::vector<double>> PlaintextOnehot;
+
+PlaintextOnehot compute_plaintext_onehot(const PlaintextData &X, const IdashParams &params);
 
 void
 compute_score(DecryptedPredictions &predictions, const PlaintextData &X, const Model &M, const IdashParams &params);
