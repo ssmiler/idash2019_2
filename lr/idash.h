@@ -209,7 +209,7 @@ void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const Ida
 
 //IDASH csv with 3 columns of snp probabilities, comma separated
 void write_decrypted_predictions(const DecryptedPredictions &predictions, const IdashParams &params,
-                                 const std::string &filename);
+                                 const std::string &filename, const bool PRINT_POS_NAME = true);
 
 void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key);
 

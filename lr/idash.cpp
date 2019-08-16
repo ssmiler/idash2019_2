@@ -374,17 +374,23 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
 }
 
 void write_decrypted_predictions(const DecryptedPredictions &predictions, const IdashParams &params,
-                                 const std::string &filename) {
+                                 const std::string &filename, const bool PRINT_POS_NAME) {
     ofstream out(filename);
     out << "Subject ID,target SNP,0,1,2" << endl;
     for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-        for (const auto &it : predictions.score) {
+        for (const auto &it : params.out_position_names) {
             const uint64_t &position = it.first;
+            const std::string &position_name = it.second;
+            const std::array<std::vector<float>, 3> &position_preds = predictions.score.at(position);
             out << sampleId << ",";
-            out << position << ",";
-            out << it.second[0][sampleId] << ",";
-            out << it.second[1][sampleId] << ",";
-            out << it.second[2][sampleId] << endl;
+            if (PRINT_POS_NAME) {
+                out << position_name << ",";
+            } else {
+                out << position << ",";
+            }
+            out << position_preds[0][sampleId] << ",";
+            out << position_preds[1][sampleId] << ",";
+            out << position_preds[2][sampleId] << endl;
         }
     }
     out.close();
