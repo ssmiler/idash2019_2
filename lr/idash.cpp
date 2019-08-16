@@ -282,7 +282,7 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
 IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile) {
 
     IdashParams *idashParams = new IdashParams();
-    const TLweKey *tlweKey;
+    TLweKey *tlweKey;
 
     std::string line;
 
@@ -350,6 +350,7 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     REQUIRE_DRAMATICALLY(idashParams->REGION_SIZE >= idashParams->NUM_SAMPLES, "REGION_SIZE must be >= NUM_SAMPLES ");
 
     tlweKey = new_TLweKey(idashParams->tlweParams);
+    tLweKeyGen(tlweKey);
     IdashKey *key = new IdashKey(idashParams, tlweKey);
     return key;
 }
