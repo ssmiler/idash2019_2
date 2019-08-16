@@ -26,7 +26,7 @@ int main2() {
                 //verify the decryption
                 const std::vector<double> &actualPlaintext = plaintextOnehot.at(bidx);
                 for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-                    double mess = t32tod(message->coefsT[sampleId]);
+                    double mess = t32tod(message->coefsT[sampleId + region * params.REGION_SIZE]);
                     double expected = actualPlaintext[sampleId];
                     REQUIRE_DRAMATICALLY(fabs(mess - expected) < 0.01, "bug");
                     max_distance = std::max<double>(max_distance, fabs(mess - expected));
