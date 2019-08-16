@@ -42,5 +42,7 @@ int main() {
 
 
     DecryptedPredictions::testEquals(targetPredictions, resultPredications, params_read);
+    write_decrypted_predictions(resultPredications, params_read, "pos_preds2", false);
+    write_decrypted_predictions(resultPredications, params_read, "named_preds2", true);
     return 0;
 }
