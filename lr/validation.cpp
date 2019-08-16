@@ -2,7 +2,7 @@
 
 
 /** data encryption test */
-int main() {
+int main2() {
     PlaintextData data;
     EncryptedData encryptedData;
 
@@ -39,8 +39,8 @@ int main() {
     return 0;
 }
 
-
-int main2() {
+/** cloud compute test */
+int main() {
     Model model;
     PlaintextData data;
     DecryptedPredictions targetPredictions;
