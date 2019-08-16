@@ -423,42 +423,24 @@ void read_key(IdashKey &key, const std::string &filename) {
 ************************************************************************/
 
 
-
-
 void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename)
 {
     ifstream inp(filename);
-    REQUIRE_DRAMATICALLY(inp, "Encrypted data file not found");
+    REQUIRE_DRAMATICALLY(inp, "Cannot open encrypted data file for read");
 
-    // read the file line by line
-    std::string line;
-    int64_t numPositionsRead = 0;
+    // read the size of enc_data
+    uint64_t length = encrypted_data.enc_data.size();
+    istream_read_binary(inp, &length, sizeof(uint64_t));
 
-    for (std::getline(inp, line); inp; std::getline(inp, line)) {
-
-        std::istringstream iss(line);
-        int blah = 0; // must be 1 in the file
-
-        FeatIndex position;
-        FeatIndex position2;
-        FeatIndex featureName;
-        iss >> blah;
-        REQUIRE_DRAMATICALLY(blah == 1, "file format error");
-
-        iss >> position;
-        iss >> position2;
-        iss >> featureName;
-        REQUIRE_DRAMATICALLY(iss, "file format error");
-
-        TLweSample *sample = encrypted_data.enc_data[position];
-        import_tlweSample_fromStream(inp, sample, params.tlweParams);
-
-        numPositionsRead++;
+    // for each element of enc_data import, then read the index and the tlwe sample
+    for (const auto &it : encrypted_data.enc_data) {
+        import_tlweSample_fromStream(inp, it.second, params.tlweParams);
+        istream_read_binary(inp, it.second, sizeof(int64_t));
     }
-    REQUIRE_DRAMATICALLY(numPositionsRead == params.NUM_INPUT_POSITIONS, "missing positions in encrypted file");
 
     inp.close();
 }
+
 
 
 
@@ -467,30 +449,69 @@ void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams
     ofstream out(filename);
     REQUIRE_DRAMATICALLY(out, "Cannot open encrypted data file for write");
 
-    out << "Shall we print something???" << endl;
+    // write the size of enc_data
+    const uint64_t length = encrypted_data.enc_data.size();
+    ostream_write_binary(out, &length, sizeof(uint64_t));
 
+    // for each element of enc_data write the index and the tlwe sample, then export
     for (const auto &it : encrypted_data.enc_data) {
-        const FeatIndex &idx = it.first;
-        export_tlweSample_toStream(out, encrypted_data.getTLWE(idx, params), params.tlweParams);
+        ostream_write_binary(out, &it.first, sizeof(int64_t));
+        export_tlweSample_toStream(out, it.second, params.tlweParams);
     }
 
     out.close();
 }
 
 
-/*
 
-void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, const IdashParams &params,
-                                 const std::string &filename);
+
+
+/************************************************************************
+********************** ENCRYPTED PREDICTIONS ****************************
+************************************************************************/
+
+
+
 
 void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const IdashParams &params,
-                                const std::string &filename);
+                                const std::string &filename)
+{
+    ifstream inp(filename);
+    REQUIRE_DRAMATICALLY(inp, "Cannot open encrypted predictions file for read");
+
+    // read the size of enc_preds
+    uint64_t length = encrypted_preds.score.size();
+    istream_read_binary(inp, &length, sizeof(uint64_t));
+
+    // for each element of enc_preds import, then read the index and the tlwe sample
+    for (const auto &it : encrypted_preds.score) {
+        import_tlweSample_fromStream(inp, it.second, params.tlweParams);
+        istream_read_binary(inp, it.second, sizeof(int64_t));
+    }
+
+    inp.close();
+}
 
 
 
-*/
+void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, const IdashParams &params,
+                                 const std::string &filename)
+{
+    ofstream out(filename);
+    REQUIRE_DRAMATICALLY(out, "Cannot open encrypted predictions file for write");
 
+    // write the size of enc_preds
+    const uint64_t length = encrypted_preds.score.size();
+    ostream_write_binary(out, &length, sizeof(uint64_t));
 
+    // for each element of enc_preds write the index and the tlwe sample, then export
+    for (const auto &it : encrypted_preds.score) {
+        ostream_write_binary(out, &it.first, sizeof(int64_t));
+        export_tlweSample_toStream(out, it.second, params.tlweParams);
+    }
+
+    out.close();
+}
 
 
 
