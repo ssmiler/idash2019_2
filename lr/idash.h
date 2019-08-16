@@ -58,8 +58,8 @@ struct IdashParams {
 
 
 
-    std::unordered_map<std::string, std::array<FeatBigIndex, 3>> in_features_index;
-    std::unordered_map<std::string, std::array<FeatBigIndex, 3>> out_features_index;
+    std::unordered_map<uint64_t, std::array<FeatBigIndex, 3>> in_features_index;
+    std::unordered_map<uint64_t, std::array<FeatBigIndex, 3>> out_features_index;
 
     inline FeatIndex feature_indexOf(uint32_t big_index) const { return big_index >> 1u; }
 
@@ -69,19 +69,19 @@ struct IdashParams {
 
     inline FeatBigIndex constant_bigIndex() const { return -1; }
 
-    inline FeatBigIndex inBigIdx(const std::string &pos, uint64_t snp) const {
+    inline FeatBigIndex inBigIdx(const uint64_t &pos, uint64_t snp) const {
         return in_features_index.at(pos).at(snp);
     }
 
-    inline FeatBigIndex outBigIdx(const std::string &pos, uint64_t snp) const {
+    inline FeatBigIndex outBigIdx(const uint64_t &pos, uint64_t snp) const {
         return out_features_index.at(pos).at(snp);
     }
 
     inline void
-    registerInBigIdx(const std::string &pos, uint64_t snp, FeatBigIndex bidx) { in_features_index[pos][snp] = bidx; }
+    registerInBigIdx(const uint64_t &pos, uint64_t snp, FeatBigIndex bidx) { in_features_index[pos][snp] = bidx; }
 
     inline void
-    registerOutBigIdx(const std::string &pos, uint64_t snp, FeatBigIndex bidx) { out_features_index[pos][snp] = bidx; }
+    registerOutBigIdx(const uint64_t &pos, uint64_t snp, FeatBigIndex bidx) { out_features_index[pos][snp] = bidx; }
 };
 
 struct IdashKey {
@@ -97,7 +97,7 @@ struct IdashKey {
 struct PlaintextData {
     // for each feature, the snip vector (0,1,2) or -1 if NAN
     // features are indexed by name (pos)
-    std::unordered_map<std::string, std::vector<int8_t>> data;
+    std::unordered_map<uint64_t, std::vector<int8_t>> data;
 };
 
 struct Model {
@@ -152,7 +152,32 @@ struct EncryptedPredictions {
 struct DecryptedPredictions {
     // predictions: for each output feature and snip, 1 vector containing the score of the N samples
     // output features are indexed by name (pos)
-    std::unordered_map<std::string, std::array<std::vector<float>, 3> > score;
+    std::unordered_map<uint64_t, std::array<std::vector<float>, 3> > score;
+
+    //verify if two DecryptedValues are equals
+    static bool
+    testEquals(const DecryptedPredictions &val1, const DecryptedPredictions &val2, const IdashParams &params) {
+
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            for (const auto &it : params.out_features_index) {
+                const uint64_t &pos = it.first;
+                if (val1.score.at(pos)[0][sampleId] != val2.score.at(pos)[0][sampleId]) {
+                    std::cout << val1.score.at(pos)[0][sampleId] << " " << val2.score.at(pos)[0][sampleId] << std::endl;
+                    //abort();
+                };
+                if (val1.score.at(pos)[1][sampleId] != val2.score.at(pos)[1][sampleId]) {
+                    std::cout << val1.score.at(pos)[1][sampleId] << " " << val2.score.at(pos)[1][sampleId] << std::endl;
+                    //abort();
+                };
+                if (val1.score.at(pos)[2][sampleId] != val2.score.at(pos)[2][sampleId]) {
+                    std::cout << val1.score.at(pos)[2][sampleId] << " " << val2.score.at(pos)[2][sampleId] << std::endl;
+                    //abort();
+                };
+            }
+
+        }
+        return true;
+    }
 };
 
 void write_params(const IdashParams &params, const std::string &filename);
@@ -188,6 +213,10 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
                          const IdashParams &params);
 
 void decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPredictions &enc_preds, const IdashKey &key);
+
+typedef std::map<FeatBigIndex, std::vector<double>> PlaintextOnehot;
+
+PlaintextOnehot compute_plaintext_onehot(const PlaintextData &X, const IdashParams &params);
 
 void
 compute_score(DecryptedPredictions &predictions, const PlaintextData &X, const Model &M, const IdashParams &params);
