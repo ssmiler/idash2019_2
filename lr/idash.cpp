@@ -157,21 +157,25 @@ void write_params_ostream(const IdashParams &params, ostream &out) {
     REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
                          params.out_features_index.size(),
                          "NUM_OUTPUT_POSITIONS != out_features_index.size()");
+    REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
+                         params.out_position_names.size(),
+                         "NUM_OUTPUT_POSITIONS != out_position_names.size()");
 
-    for (const auto &e1 : params.out_features_index) {
+    for (const auto &e1 : params.out_position_names) {
         uint64_t pos = e1.first;
+        string name = e1.second;
 
         // write feature position
         ostream_write_binary(out, &pos, sizeof(uint64_t));
-        //size_t pos_size = pos.size();
-        //ostream_write_binary(out, &pos_size, sizeof(size_t));
-        //ostream_write_binary(out, pos.c_str(), sizeof(char) * pos.size());
+        // write feature name (null terminated)
+        ostream_write_binary(out, name.c_str(), name.size() + 1);
 
         // write snps
-        for (const FeatBigIndex e2 : e1.second) {
+        for (const FeatBigIndex e2 : params.out_features_index.at(pos)) {
             ostream_write_binary(out, (&e2), sizeof(e2));
         }
     }
+
 
 }
 
@@ -219,11 +223,17 @@ void read_params_istream(IdashParams &params, istream &inp) {
 
     for (uint32_t i = 0; i < params.NUM_OUTPUT_POSITIONS; ++i) {
         uint64_t pos;
+        string pos_name;
 
         // read feature position
         istream_read_binary(inp, &pos, sizeof(uint64_t));
+        // read feature name (until '\0')
+        for (int c = inp.get(); c > 0; c = inp.get()) {
+            pos_name.push_back(c);
+        }
 
         // read snps
+        params.out_position_names.push_back({pos, pos_name});
         params.out_features_index.emplace(pos, array<FeatBigIndex, 3>());
         auto &tmp = params.out_features_index.at(pos);
         for (int j = 0; j < 3; ++j) {
@@ -234,6 +244,9 @@ void read_params_istream(IdashParams &params, istream &inp) {
     REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
                          params.out_features_index.size(),
                          "NUM_OUTPUT_POSITIONS != out_features_index.size()");
+    REQUIRE_DRAMATICALLY(params.NUM_OUTPUT_POSITIONS ==
+                         params.out_position_names.size(),
+                         "NUM_OUTPUT_POSITIONS != out_position_names.size()");
 
 }
 
@@ -296,14 +309,18 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
         std::istringstream iss(line);
         int blah = 0; // must be 1 in the file
         uint64_t position;
+        uint64_t position2; //must be position+1
+        std::string position_name; //must be position+1
         iss >> blah;
         REQUIRE_DRAMATICALLY(blah == 1, "file format error");
-        iss >> position;
+        iss >> position >> position2 >> position_name;
+        REQUIRE_DRAMATICALLY(position2 == position + 1, "file format error");
         REQUIRE_DRAMATICALLY(iss, "file format error");
         idashParams->registerOutBigIdx(position, 0, idashParams->NUM_OUTPUT_FEATURES++);
         idashParams->registerOutBigIdx(position, 1, idashParams->NUM_OUTPUT_FEATURES++);
         idashParams->registerOutBigIdx(position, 2, idashParams->NUM_OUTPUT_FEATURES++);
         idashParams->NUM_OUTPUT_POSITIONS++;
+        idashParams->registerOutPositionName(position, position_name);
     }
     target.close();
 

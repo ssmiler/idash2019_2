@@ -60,6 +60,7 @@ struct IdashParams {
 
     std::unordered_map<uint64_t, std::array<FeatBigIndex, 3>> in_features_index;
     std::unordered_map<uint64_t, std::array<FeatBigIndex, 3>> out_features_index;
+    std::vector<std::pair<uint64_t, std::string> > out_position_names; //in the order of the csv
 
     inline FeatIndex feature_indexOf(uint32_t big_index) const { return big_index >> 1u; }
 
@@ -82,6 +83,9 @@ struct IdashParams {
 
     inline void
     registerOutBigIdx(const uint64_t &pos, uint64_t snp, FeatBigIndex bidx) { out_features_index[pos][snp] = bidx; }
+
+    inline void
+    registerOutPositionName(const uint64_t &pos, const std::string &name) { out_position_names.push_back({pos, name}); }
 };
 
 struct IdashKey {
