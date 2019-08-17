@@ -452,10 +452,14 @@ void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &param
     uint64_t length = encrypted_data.enc_data.size();
     istream_read_binary(inp, &length, sizeof(uint64_t));
 
-    // for each element of enc_data import, then read the index and the tlwe sample
-    for (const auto &it : encrypted_data.enc_data) {
-        import_tlweSample_fromStream(inp, it.second, params.tlweParams);
-        istream_read_binary(inp, it.second, sizeof(int64_t));
+    // read the index and the tlwe sample
+    for (uint64_t i = 0; i < length; ++i) {
+        FeatIndex index;
+
+        istream_read_binary(inp, &index, sizeof(FeatIndex));
+        import_tlweSample_fromStream(inp, encrypted_data.enc_data[i], params.tlweParams);
+
+        encrypted_data.enc_data.emplace(index, encrypted_data.enc_data[i]);
     }
 
     inp.close();
@@ -475,7 +479,7 @@ void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams
 
     // for each element of enc_data write the index and the tlwe sample, then export
     for (const auto &it : encrypted_data.enc_data) {
-        ostream_write_binary(out, &it.first, sizeof(int64_t));
+        ostream_write_binary(out, &it.first, sizeof(FeatIndex));
         export_tlweSample_toStream(out, it.second, params.tlweParams);
     }
 
@@ -503,10 +507,14 @@ void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const Ida
     uint64_t length = encrypted_preds.score.size();
     istream_read_binary(inp, &length, sizeof(uint64_t));
 
-    // for each element of enc_preds import, then read the index and the tlwe sample
-    for (const auto &it : encrypted_preds.score) {
-        import_tlweSample_fromStream(inp, it.second, params.tlweParams);
-        istream_read_binary(inp, it.second, sizeof(int64_t));
+    // read the index and the tlwe sample
+    for (uint64_t i = 0; i < length; ++i) {
+        FeatBigIndex index;
+
+        istream_read_binary(inp, &index, sizeof(FeatBigIndex));
+        import_tlweSample_fromStream(inp, encrypted_preds.score[i], params.tlweParams);
+
+        encrypted_preds.score.emplace(index, encrypted_preds.score[i]);
     }
 
     inp.close();
@@ -526,7 +534,7 @@ void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, co
 
     // for each element of enc_preds write the index and the tlwe sample, then export
     for (const auto &it : encrypted_preds.score) {
-        ostream_write_binary(out, &it.first, sizeof(int64_t));
+        ostream_write_binary(out, &it.first, sizeof(FeatBigIndex));
         export_tlweSample_toStream(out, it.second, params.tlweParams);
     }
 
