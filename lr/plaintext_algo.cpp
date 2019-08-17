@@ -11,6 +11,6 @@ int main() {
     read_model(model, params, "../../ml/model/hr/10k");
     read_plaintext_data(data, params, CHALLENGE_FILE);
     compute_score(predictions, data, model, params);
-    write_decrypted_predictions(predictions, params, "preds_filename");
+    write_decrypted_predictions(predictions, params, "preds_filename", 0);
 }
 
