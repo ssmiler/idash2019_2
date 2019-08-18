@@ -7,7 +7,7 @@ int main() {
     DecryptedPredictions targetPredictions;
     EncryptedData encryptedData;
     DecryptedPredictions resultPredications;
-    EncryptedPredictions encPredications;
+    EncryptedPredictions encPredictions;
 
 
     IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE);
@@ -28,17 +28,17 @@ int main() {
 
     encrypt_data(encryptedData, data, key_read);
 
-    //write_encrypted_data(encryptedData, params_read, "file_encrypt_data");
-    //EncryptedData encryptedData_read;
-    //read_encrypted_data(encryptedData_read, params_read, "file_encrypt_data");
+    write_encrypted_data(encryptedData, params_read, "file_encrypt_data");
+    EncryptedData encryptedData_read;
+    read_encrypted_data(encryptedData_read, params_read, "file_encrypt_data");
 
-    cloud_compute_score(encPredications, encryptedData, model, params_read);
+    cloud_compute_score(encPredictions, encryptedData_read, model, params_read);
 
-    //write_encrypted_predictions(encPredications, params_read, "file_encrypt_prediction");
-    //EncryptedPredictions encPredictions_read;
-    //read_encrypted_predictions(encPredictions_read, params_read, "file_encrypt_prediction");
+    write_encrypted_predictions(encPredictions, params_read, "file_encrypt_prediction");
+    EncryptedPredictions encPredictions_read;
+    read_encrypted_predictions(encPredictions_read, params_read, "file_encrypt_prediction");
 
-    decrypt_predictions(resultPredications, encPredications, key_read);
+    decrypt_predictions(resultPredications, encPredictions_read, key_read);
 
 
     DecryptedPredictions::testEquals(targetPredictions, resultPredications, params_read);

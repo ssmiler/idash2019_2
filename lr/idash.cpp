@@ -262,6 +262,11 @@ void read_params(IdashParams &params, const string &filename) {
 }
 
 
+
+
+
+
+
 void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idashParams, const std::string &filename) {
     ifstream challenge(filename);
     REQUIRE_DRAMATICALLY(challenge, "file not found");
@@ -428,6 +433,140 @@ void read_key(IdashKey &key, const std::string &filename) {
 
     inp.close();
 }
+
+
+
+
+
+/************************************************************************
+************************** ENCRYPTED DATA *******************************
+************************************************************************/
+
+
+void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename)
+{
+    ifstream inp(filename);
+    REQUIRE_DRAMATICALLY(inp, "Cannot open encrypted data file for read");
+
+    // read the size of enc_data
+    uint64_t length = encrypted_data.enc_data.size();
+    istream_read_binary(inp, &length, sizeof(uint64_t));
+
+    TLweSample *sample = new_TLweSample_array(length, params.tlweParams);
+
+    // read the index and the tlwe sample
+    for (uint64_t i = 0; i < length; ++i) {
+        FeatIndex index;
+
+        istream_read_binary(inp, &index, sizeof(FeatIndex));
+        import_tlweSample_fromStream(inp, &sample[i], params.tlweParams);
+
+        encrypted_data.enc_data.emplace(index, &sample[i]);
+    }
+
+    inp.close();
+}
+
+
+
+
+void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams &params, const std::string &filename)
+{
+    ofstream out(filename);
+    REQUIRE_DRAMATICALLY(out, "Cannot open encrypted data file for write");
+
+    // write the size of enc_data
+    const uint64_t length = encrypted_data.enc_data.size();
+    ostream_write_binary(out, &length, sizeof(uint64_t));
+
+    // for each element of enc_data write the index and the tlwe sample, then export
+    for (const auto &it : encrypted_data.enc_data) {
+        ostream_write_binary(out, &it.first, sizeof(FeatIndex));
+        export_tlweSample_toStream(out, it.second, params.tlweParams);
+    }
+
+    out.close();
+}
+
+
+
+
+
+/************************************************************************
+********************** ENCRYPTED PREDICTIONS ****************************
+************************************************************************/
+
+
+
+void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const IdashParams &params,
+                                const std::string &filename)
+{
+    ifstream inp(filename);
+    REQUIRE_DRAMATICALLY(inp, "Cannot open encrypted predictions file for read");
+
+    // read the size of enc_preds
+    uint64_t length = encrypted_preds.score.size();
+    istream_read_binary(inp, &length, sizeof(uint64_t));
+
+    TLweSample *sample = new_TLweSample_array(length, params.tlweParams);
+
+
+    // read the index and the tlwe sample
+    for (uint64_t i = 0; i < length; ++i) {
+        FeatBigIndex index;
+
+        istream_read_binary(inp, &index, sizeof(FeatBigIndex));
+        import_tlweSample_fromStream(inp, &sample[i], params.tlweParams);
+
+        encrypted_preds.score.emplace(index, &sample[i]);
+    }
+
+    inp.close();
+}
+
+
+
+void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, const IdashParams &params,
+                                 const std::string &filename)
+{
+    ofstream out(filename);
+    REQUIRE_DRAMATICALLY(out, "Cannot open encrypted predictions file for write");
+
+    // write the size of enc_preds
+    const uint64_t length = encrypted_preds.score.size();
+    ostream_write_binary(out, &length, sizeof(uint64_t));
+
+    // for each element of enc_preds write the index and the tlwe sample, then export
+    for (const auto &it : encrypted_preds.score) {
+        ostream_write_binary(out, &it.first, sizeof(FeatBigIndex));
+        export_tlweSample_toStream(out, it.second, params.tlweParams);
+    }
+
+    out.close();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key) {
     const IdashParams &params = *key.idashParams;
@@ -691,4 +830,5 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
         // }
     }
 }
+
 
