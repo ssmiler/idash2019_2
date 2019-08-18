@@ -452,14 +452,16 @@ void read_encrypted_data(EncryptedData &encrypted_data, const IdashParams &param
     uint64_t length = encrypted_data.enc_data.size();
     istream_read_binary(inp, &length, sizeof(uint64_t));
 
+    TLweSample *sample = new_TLweSample_array(length, params.tlweParams);
+
     // read the index and the tlwe sample
     for (uint64_t i = 0; i < length; ++i) {
         FeatIndex index;
 
         istream_read_binary(inp, &index, sizeof(FeatIndex));
-        import_tlweSample_fromStream(inp, encrypted_data.enc_data[i], params.tlweParams);
+        import_tlweSample_fromStream(inp, &sample[i], params.tlweParams);
 
-        encrypted_data.enc_data.emplace(index, encrypted_data.enc_data[i]);
+        encrypted_data.enc_data.emplace(index, &sample[i]);
     }
 
     inp.close();
@@ -496,7 +498,6 @@ void write_encrypted_data(const EncryptedData &encrypted_data, const IdashParams
 
 
 
-
 void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const IdashParams &params,
                                 const std::string &filename)
 {
@@ -507,14 +508,17 @@ void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const Ida
     uint64_t length = encrypted_preds.score.size();
     istream_read_binary(inp, &length, sizeof(uint64_t));
 
+    TLweSample *sample = new_TLweSample_array(length, params.tlweParams);
+
+
     // read the index and the tlwe sample
     for (uint64_t i = 0; i < length; ++i) {
         FeatBigIndex index;
 
         istream_read_binary(inp, &index, sizeof(FeatBigIndex));
-        import_tlweSample_fromStream(inp, encrypted_preds.score[i], params.tlweParams);
+        import_tlweSample_fromStream(inp, &sample[i], params.tlweParams);
 
-        encrypted_preds.score.emplace(index, encrypted_preds.score[i]);
+        encrypted_preds.score.emplace(index, &sample[i]);
     }
 
     inp.close();
