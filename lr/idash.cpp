@@ -375,6 +375,12 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     tlweKey = new_TLweKey(idashParams->tlweParams);
     tLweKeyGen(tlweKey);
     IdashKey *key = new IdashKey(idashParams, tlweKey);
+
+    cout << "target_file (headers): " << targetFile << endl;
+    cout << "tag_file: " << challengeFile << endl;
+    cout << "NUM_SAMPLES: " << idashParams->NUM_SAMPLES << endl;
+    cout << "NUM_TARGET_POSITIONS: " << idashParams->NUM_OUTPUT_POSITIONS << endl;
+    cout << "NUM_TAG_POSITIONS: " << idashParams->NUM_INPUT_POSITIONS << endl;
     return key;
 }
 
