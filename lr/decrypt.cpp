@@ -18,8 +18,8 @@ int main() {
     read_key(key, KEYS_FILE);
     read_encrypted_predictions(enc_predictions, *key.idashParams, ENCRYPTED_PREDICTION_FILE);
     decrypt_predictions(dec_predictions, enc_predictions, key);
-    write_decrypted_predictions(dec_predictions, *key.idashParams, RESULT_FILE, 0);
-    write_decrypted_predictions(dec_predictions, *key.idashParams, RESULT_BYPOS_FILE, 1);
+    write_decrypted_predictions(dec_predictions, *key.idashParams, RESULT_FILE, 1);
+    write_decrypted_predictions(dec_predictions, *key.idashParams, RESULT_BYPOS_FILE, 0);
 
     /** just to test if the result is the same as validate2
     for (uint64_t sampleId = 0; sampleId < key.idashParams->NUM_SAMPLES; ++sampleId) {
