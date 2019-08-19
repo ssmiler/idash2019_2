@@ -25,6 +25,7 @@ set(PROG_SRC
         plaintext_algo.cpp)
 
 if (APPLE)
+    #set(LIBTFHE tfhe-spqlios-fma)
     set(LIBTFHE tfhe-nayuki-portable)
 else ()
     #set(LIBTFHE tfhe-nayuki-portable)
