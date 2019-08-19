@@ -13,7 +13,8 @@
 
 #define DIE_DRAMATICALLY(message) { std::cout << "ERROR: " << message << std::endl; abort(); }
 
-#define CHALLENGE_FILE "../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
+#define CHALLENGE_FILE "../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
+//#define CHALLENGE_FILE "../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
 #define TARGET_FILE "../../data/sorted_target_SNP_genotypes.txt"
 
 
