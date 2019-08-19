@@ -1,4 +1,8 @@
-TIME_CMD=/usr/bin/time -f '%e seconds -  %M KB RAM'
+UNIX_TIME_CMD=/usr/bin/time -f '%e seconds -  %M KB RAM'
+APPLE_TIME_CMD=/usr/bin/time -l
+UNAME:=$(shell uname)
+
+ifeq ($)
 
 all: bin/keygen params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv
 
@@ -7,7 +11,7 @@ clean:
 
 build:
 	[ -d bin ] || mkdir bin
-	cd bin; cmake ../.. -DCMAKE_BUILD_TYPE=optim -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=off -DENABLE_TESTS=off
+	cd bin; cmake ../.. -DCMAKE_BUILD_TYPE=optim -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_TESTS=off
 	cd bin; make -j 4 VERBOSE=1
 
 bin/keygen:
