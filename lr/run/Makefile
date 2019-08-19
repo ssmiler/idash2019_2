@@ -1,8 +1,11 @@
-UNIX_TIME_CMD=/usr/bin/time -f '%e seconds -  %M KB RAM'
-APPLE_TIME_CMD=/usr/bin/time -l
 UNAME:=$(shell uname)
 
-ifeq ($)
+ifeq (${UNAME}, Linux)
+TIME_CMD=/usr/bin/time -f '%e seconds -  %M KB RAM'
+endif
+ifeq (${UNAME}, Darwin)
+TIME_CMD=/usr/bin/time -l
+endif
 
 all: bin/keygen params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv
 
