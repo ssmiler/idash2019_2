@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -84,7 +84,7 @@
 % \newcommand{\LWE}{\mathsf{LWE}}
 % \newcommand{\GSW}{\sc{\mathrm{GSW}}}
 % \newcommand{\SILWE}{\mathsf{SILWE}}
-% \newcommand{\RingLWE}{\sc{\mathrm{RingLWE}}}
+\newcommand{\RingLWE}{\sc{\mathrm{RingLWE}}}
 % \newcommand{\TLWE}{\sc{\mathrm{TLWE}}}
 % \newcommand{\TGSW}{\sc{\mathrm{TGSW}}}
 % \newcommand{\LWEPubEncrypt}{\textsf{LWEPubEncrypt}}
@@ -164,122 +164,88 @@
 
 \section{Plaintext version}
 
+In this section we describe the plaintext idea of our solution.
+The logreg model is trained in clear and the coefficients are given in cleartext to perform the homomorphic evaluation. 
+To train the model we used the library Vowpal Wabbit (VW).
+
+The parameters we use are:
+\begin{itemize}
+	\item $N$ -- the number of SNP values (one-hot-encoded);
+	\item $L$ -- the number of samples (individuals);
+	\item $T$ -- the numbers of tags SNP to predict.
+\end{itemize}
+In practice, $N$ is multiplied by 3: in fact the possible values for the SNP are 0, 1 and 2. 
+In the experiments, $N = ?$, $L = 500$ and $T = 1500$.
+
+
+
+The imput matrices are:
+\begin{itemize}
+	\item $X = (X[i][j])_{i\in [L], j\in [3\cdot N]}$ -- contains the input values, i.e. the SNP for each individual, as boolean values;
+	\item $M = (M[j][k])_{j\in [3\cdot N], k\in [T]}$ -- contains the coefficients of the model in clear.
+\end{itemize}
+The evaluation consists in a matrix-matrix multiplication: 
+$$
+X \cdot M = Y = (Y[i][k])_{i\in [L], k\in [T]}.
+$$ 
+
+
+
 
 
 
 
 \section{Ciphertext version}
 
+In ciphertext mode, we try to pack together as many coefficients as possible. 
+The capability of the $\RingLWE$ packing is given by the ring dimension $n = 1024$.
+We refer to TFHE~\cite{CGGI18} for more information.
 
-
-
-
-\if[0]
-\begin{figure}[H]
-    \caption{Mux gates}\label{fig:mux}
-    \begin{center}
-    \includegraphics[width=0.5\textwidth]{figs/mux-full.pdf}
-    \end{center}
-\end{figure}
-\fi
-
-%\vspace{-0.5cm}
-\begin{figure}[h]
-\caption{Mux gates}\label{fig:mux}
-\begin{center}
-\begin{tikzpicture}[scale=0.9]
-
-\node[draw][minimum width=0.5cm,minimum height=1.5cm] (MUX) at (0,0) {};
-
-\path (0,0.4) node[scale=1]{$0$};
-\path (0,-0.4) node[scale=1]{$1$};
-
-\draw[-,>=latex] (-1,1.3) -- (0,1.3);
-\draw[-,>=latex] (0,1.3) -- (MUX);
-\path (-1.3,1.3) node[scale=1]{$c_n$};
-
-\draw[-,>=latex] (-1,0.4) -- (-0.25,0.4);
-\path (-1.5,0.4) node[scale=1]{$(m_c)_j$};
-
-\draw[-,>=latex] (-1,-0.4) -- (-0.25,-0.4);
-\path (-1.7,-0.4) node[scale=1]{$(m_c-t)_j$};
-
-\draw[-,>=latex] (0.25,0) -- (1,0);
-\path (1.5,0) node[scale=1]{$(m'_c)_j$};
-%%%
-\node[draw][minimum width=0.5cm,minimum height=1.5cm] (MUX1) at (4.5,0) {};
-
-\path (4.5,0.4) node[scale=1]{$0$};
-\path (4.5,-0.4) node[scale=1]{$1$};
-
-\draw[-,>=latex] (3.5,1.3) -- (4.5,1.3);
-\draw[-,>=latex] (4.5,1.3) -- (MUX1);
-\path (3.2,1.3) node[scale=1]{$c_n$};
-
-\draw[-,>=latex] (3.5,0.4) -- (4.25,0.4);
-\path (3,0.4) node[scale=1]{$(m_s)_j$};
-
-\draw[-,>=latex] (3.5,-0.4) -- (4.25,-0.4);
-\path (2.8,-0.4) node[scale=1]{$(m_s+t)_j$};
-
-\draw[-,>=latex] (4.75,0) -- (5.5,0);
-\path (6,0) node[scale=1]{$(m'_s)_j$};
-%%%
-\path (2,-1.5) node[scale=1]{$j=0, \ldots, n-1$};
-\end{tikzpicture}
-\end{center}  
-\end{figure}
-%\vspace{-0.2cm}
-
-
-\subsection{Plaintext version}
+Algorithm~\ref{alg:computation} describes our ciphertext approach. 
+It has to be repeated for the 3 values of the SNP separately.
 
 
 
 \begin{algorithm}
-\caption{Complex transaction (plaintext algorithm).}
+\caption{Homomorphic computation.}
 \begin{algorithmic}[1]
-    \Require $t$ -- transaction amount (positive or negative)
-    \Require $m_0$ -- bank account balance
-    \Require $nd_0$ -- old negative days status (number of days negative balance)
-    \Require $d$ -- number of days from previous transaction
-    \Ensure $s \in \{-1, 0, 1\}$ -- transaction status
-    \Ensure $m_1$ -- new bank account balance
-    \Ensure $nd_1$ -- new negative days status (number of days negative balance)
+    \Require $\RingLWE(X[\cdot][2j|2j+1])$ -- for $j \in [N/2]$ \label{algline:X}
+    \Require $M[j][k]$ -- for $j\in [N]$ and $k\in [T]$ \label{algline:M}
+    \Ensure $\RingLWE(Y[\cdot][k])$ -- for $k\in [T]$ \label{algline:Y}
     
     \Statex
     
-    \State Compute new potential balance: $m_1 = m_0 + t$ \label{algline:new_balance}
-    \If{$m_0 < 0$ \textbf{and} $m_1 < 0$} \label{algline:new_negative_status} \Comment{Update negative days status}
-        \State $nd_1 = nd_0 + d$ 
-    \Else
-        \State $nd_1 = 0$
-    \EndIf
+    \State $Y_0[\cdot][k] = 0$ and $Y_1[\cdot][k] = 0$ \Comment{Initialize two temporary values}\label{algline:init}
     
-    \Statex
+    \For{$k = 1, \ldots, T$} \label{algline:for_k} 
+    	\For{$j = 1, \ldots, N/2$} \label{algline:for_j} 
+    		\If{$M[j][k] \neq 0$}
+    			\State $\RingLWE(Y_0[\cdot][k]) += M[j][k] \cdot \RingLWE(X[\cdot][2j|2j+1])$ \label{algline:Y_0}
+    		\EndIf
+    		\If{$M[j+1][k] \neq 0$}
+    			\State $\RingLWE(Y_1[\cdot][k]) += M[j+1][k] \cdot \RingLWE(X[\cdot][2j|2j+1])$ \label{algline:Y_0}
+    		\EndIf
+    	\EndFor
+    	\State $\RingLWE(Y[\cdot][k]) = \RingLWE(Y_0[\cdot][k]) + \RingLWE(Y_1[\cdot][k]) \cdot X^{-N/2}$ 
+    \EndFor
     
-    \If{$t < 0$} \Comment{client makes a payment} \label{algline:pay}
-        \If{$m_1 < min$ \textbf{or} $nd_1 \geq maxND$}
-            \State \Return $(s = -1, m_1 = m_0, nd_1)$ \label{algline:pay-1}
-            
-        \ElsIf{$m_1 < 0$} \Comment{$m_1 \geq min$ \textbf{and} $nd_1 < maxND$}
-            \State \Return $(s = 0, m_1, nd_1)$ \label{algline:pay0}
-        \Else \Comment{$m_1 \geq 0$ and $nd_1 = 0$}
-            \State \Return $(s = 1, m_1, nd_1 = 0)$ \label{algline:pay1}
-        \EndIf
-
-    \Else \Comment{$t \geq 0$, client receives a payment, always allowed} \label{algline:receive}
-        \If{$m_1 \geq 0$}
-        	\State \Return $(s = 1, m_1, nd_1 = 0)$ \label{algline:receive_positive}
-        \Else
-            \State \Return $(s = 1, m_1, nd_1)$ \label{algline:receive_negative}
-        \EndIf
-    \EndIf
+    \State $R = (\vec{0}, 0 + \ldots + 0 \cdot X^{N/2-1} + r_{N/2} \cdot X^{N/2} \ldots + r_{N-1} \cdot X^{N-1})$ \Comment{Random values}
     
-\end{algorithmic}\label{alg:transactionSenderIdeaClear}
+    \State $\RingLWE(Y[\cdot][k]) += R$ 
+    
+\end{algorithmic}\label{alg:computation}
 \end{algorithm}
 
 
+
+The model is given in cleartext, while the inputs are encrypted with $\RingLWE$. 
+The outputs are also encrypted with $\RingLWE$.
+We pack into a single $\RingLWE$ ciphertexts 2 columns of the input matrix $X$, scaled with scaling factor $P$.
+We multiply this encryption with the plaintext model corresponding to the encrypted columns. 
+Before adding them together, we rotate the second one of $N/2$ positions.
+Finally, we mask the unused values with random numbers. 
+
+We decrypt $T$ $\RingLWE(Y[\cdot][k])$, each containing the prediction for one tag SNP for all individuals.
 
 
 
@@ -287,8 +253,6 @@
 
 
 \section{Experimental results}
-
-TFHE~\cite{CGGI18}
 
 \begin{table}[]
     \centering
@@ -303,18 +267,8 @@ TFHE~\cite{CGGI18}
 \end{table}
 
 
-\begin{table}[]
-    \centering
-    \begin{tabular}{c|c|c|c|c}
-        Application & exec. time & RAM usage & input size & output size \\
-        \hline
-        Simple & 4.9 secs & <200 KB & 189 KB & 128 KB\\
-        Complex & 5.1 secs & <200 KB & 189 KB & 131.9 KB
-    \end{tabular}
-    \caption{Execution performance metrics.% Execution times are given in seconds and memory usage in KB.
-    }
-    \label{tab:exec_time}
-\end{table}
+
+
 
 
 
