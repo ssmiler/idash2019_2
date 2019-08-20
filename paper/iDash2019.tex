@@ -223,27 +223,27 @@ It has to be repeated for the 3 values of the SNP separately.
     			\State $\RingLWE(Y_0[\cdot][k]) += M[j][k] \cdot \RingLWE(X[\cdot][2j|2j+1])$ \label{algline:Y_0}
     		\EndIf
     		\If{$M[j+1][k] \neq 0$}
-    			\State $\RingLWE(Y_1[\cdot][k]) += M[j+1][k] \cdot \RingLWE(X[\cdot][2j|2j+1])$ \label{algline:Y_0}
+    			\State $\RingLWE(Y_1[\cdot][k]) += M[j+1][k] \cdot \RingLWE(X[\cdot][2j|2j+1])$ \label{algline:Y_1}
     		\EndIf
     	\EndFor
-    	\State $\RingLWE(Y[\cdot][k]) = \RingLWE(Y_0[\cdot][k]) + \RingLWE(Y_1[\cdot][k]) \cdot X^{-N/2}$ 
+    	\State $\RingLWE(Y[\cdot][k]) = \RingLWE(Y_0[\cdot][k]) + \RingLWE(Y_1[\cdot][k]) \cdot X^{-N/2}$ \label{algline:rotate}
     \EndFor
     
     \State $R = (\vec{0}, 0 + \ldots + 0 \cdot X^{N/2-1} + r_{N/2} \cdot X^{N/2} \ldots + r_{N-1} \cdot X^{N-1})$ \Comment{Random values}
     
-    \State $\RingLWE(Y[\cdot][k]) += R$ 
+    \State $\RingLWE(Y[\cdot][k]) += R$ \label{algline:add_rand}
     
 \end{algorithmic}\label{alg:computation}
 \end{algorithm}
 
 
 
-The model is given in cleartext, while the inputs are encrypted with $\RingLWE$. 
-The outputs are also encrypted with $\RingLWE$.
+The model is given in cleartext (Line~\ref{algline:M}), while the inputs are encrypted with $\RingLWE$  (Line~\ref{algline:X}). 
+The outputs are also encrypted with $\RingLWE$ (Line~\ref{algline:Y}).
 We pack into a single $\RingLWE$ ciphertexts 2 columns of the input matrix $X$, scaled with scaling factor $P$.
-We multiply this encryption with the plaintext model corresponding to the encrypted columns. 
-Before adding them together, we rotate the second one of $N/2$ positions.
-Finally, we mask the unused values with random numbers. 
+We multiply this encryption with the plaintext model corresponding to both encrypted columns (Lines~\ref{algline:Y_0} and~\ref{algline:Y_1}). 
+Before adding them together, we rotate the second one of $N/2$ positions (Line~\ref{algline:rotate}).
+Finally, we mask the unused values with random numbers (Line~\ref{algline:add_rand}). 
 
 We decrypt $T$ $\RingLWE(Y[\cdot][k])$, each containing the prediction for one tag SNP for all individuals.
 
