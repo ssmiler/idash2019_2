@@ -1,3 +1,4 @@
 /lr/build/*
 /ml/data/*
 /ml/model/vw*
+/ml/model/hr*
