@@ -21,7 +21,7 @@ int main() {
     IdashParams params_read;
     read_params(params_read, "file_params");
 
-    read_model(model, params_read, "../../ml/model/hr/10k");
+    read_model(model, params_read, MODEL_FILE);
     read_plaintext_data(data, params_read, CHALLENGE_FILE);
 
     compute_score(targetPredictions, data, model, params_read);
