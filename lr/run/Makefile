@@ -1,10 +1,10 @@
-CHALLENGE_FILE="../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
-#CHALLENGE_FILE="../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
+# CHALLENGE_FILE="../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
+CHALLENGE_FILE="../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
 TARGET_HEADERS="../../data/sorted_target_SNP_genotypes.txt"
 TARGET_FILE="../../data/sorted_target_SNP_genotypes.txt"
-MODEL_FILE="../../ml/model/hr/10k_best"
-#MODEL_FILE="../../ml/model/hr/10k"
-#MODEL_FILE="../../ml/model/hr/1k"
+ML_DIR="../../ml"
+MODEL_FILE="${ML_DIR}/model/10k"
+#MODEL_FILE="${ML_DIR}/model/1k"
 
 # LINUX vs. OSX specifics
 UNAME:=$(shell uname)
@@ -18,7 +18,7 @@ TIME_CMD=/usr/bin/time -l
 CMAKE_OPTIONS=-DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_NAYUKI_AVX=off
 endif
 
-all: bin/keygen params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv
+all: bin/keygen params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
 
 clean:
 	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv || true
@@ -65,3 +65,5 @@ result.csv: keys.bin encrypted_prediction.bin
 result_bypos.csv: result.csv
 	@[ -f $@ ] # verify that the target is present
 
+auc: result_bypos.csv
+	python3 ${ML_DIR}/validate.py --pred_file result_bypos.csv --target_file ${TARGET_FILE} -i 2250
