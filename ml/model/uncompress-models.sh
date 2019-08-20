@@ -1,9 +1,9 @@
 #!/bin/sh
 
-DIR=`basename $0`
+DIR=`dirname $0`
 cd "$DIR"
 
-if [ ! -d ../ml/model ]; then
+if [ ! -d ../../ml/model ]; then
     echo please run uncompress from the ml/model directory
     exit 1
 fi
