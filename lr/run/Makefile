@@ -1,3 +1,9 @@
+CHALLENGE_FILE="../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
+#CHALLENGE_FILE="../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
+TARGET_HEADERS="../../data/sorted_target_SNP_genotypes.txt"
+TARGET_FILE="../../data/sorted_target_SNP_genotypes.txt"
+MODEL_FILE="../../ml/model/hr/10k"
+#MODEL_FILE="../../ml/model/hr/1k"
 
 # LINUX vs. OSX specifics
 UNAME:=$(shell uname)
@@ -29,7 +35,7 @@ bin/keygen:
 
 keys.bin:
 	@echo ===============================================================
-	${TIME_CMD} ./bin/keygen
+	${TIME_CMD} ./bin/keygen ${TARGET_HEADERS} ${CHALLENGE_FILE}
 	@echo ===============================================================
 
 params.bin: keys.bin
@@ -37,14 +43,14 @@ params.bin: keys.bin
 
 encrypted_data.bin: keys.bin
 	@echo ===============================================================
-	${TIME_CMD} ./bin/encrypt
+	${TIME_CMD} ./bin/encrypt ${CHALLENGE_FILE}
 	@[ -f $@ ] # verify that the target is present
 	@ls -lh $@
 	@echo ===============================================================
 
 encrypted_prediction.bin: params.bin encrypted_data.bin
 	@echo ===============================================================
-	${TIME_CMD} ./bin/cloud
+	${TIME_CMD} ./bin/cloud ${MODEL_FILE}
 	@[ -f $@ ] # verify that the target is present
 	@ls -lh $@
 	@echo ===============================================================
