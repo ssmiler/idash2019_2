@@ -16,7 +16,7 @@
 #define CHALLENGE_FILE "../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
 //#define CHALLENGE_FILE "../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
 #define TARGET_FILE "../../data/sorted_target_SNP_genotypes.txt"
-#define MODEL_FILE "../../ml/model/hr/10k"
+#define MODEL_FILE "../../ml/model/1k"
 //#define MODEL_FILE "../../ml/model/hr/1k"
 
 
@@ -127,6 +127,14 @@ struct Model {
 
 struct EncryptedData {
     std::unordered_map<FeatIndex, TLweSample *> enc_data;
+
+    void ensure_exists(const FeatBigIndex bidx, TLweSample*& nextSample, const IdashParams& params) {
+        FeatIndex featIndex = params.feature_indexOf(bidx);
+        if (enc_data.count(featIndex) == 0) {
+            enc_data.emplace(featIndex, nextSample);
+            ++nextSample;
+        }
+    }
 
     void ensure_exists(const FeatBigIndex bidx, const IdashKey &key) {
         FeatIndex featIndex = key.idashParams->feature_indexOf(bidx);
