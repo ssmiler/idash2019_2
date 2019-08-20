@@ -582,6 +582,7 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
     //pre-encrypt a pool of ciphertexts of zero
     const uint64_t NUM_CIPHERTEXTS = (params.NUM_INPUT_FEATURES+params.NUM_REGIONS-1)/params.NUM_REGIONS;
     TLweSample* pool = new_TLweSample_array(NUM_CIPHERTEXTS, params.tlweParams);
+#pragma omp parallel for
     for (uint64_t i=0; i<NUM_CIPHERTEXTS; ++i) {
         tLweSymEncryptZero(pool+i, params.alpha, key.tlweKey);
     }
