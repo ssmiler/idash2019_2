@@ -16,11 +16,12 @@
 #define CHALLENGE_FILE "../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
 //#define CHALLENGE_FILE "../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
 #define TARGET_FILE "../../data/sorted_target_SNP_genotypes.txt"
+#define MODEL_FILE "../../ml/model/hr/10k"
+//#define MODEL_FILE "../../ml/model/hr/1k"
 
 
 #define PARAMS_FILE "params.bin"
 #define KEYS_FILE "keys.bin"
-#define MODEL_FILE "../../ml/model/hr/10k"
 
 #define ENCRYPTED_DATA_FILE "encrypted_data.bin"
 #define ENCRYPTED_PREDICTION_FILE "encrypted_prediction.bin"
