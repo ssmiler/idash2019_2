@@ -24,7 +24,7 @@ const TLweParams *IdashParams::tlweParams = new_TLweParams(IdashParams::N, Idash
 // enc_data = one hot encoding of input / SCALING_FACTOR
 //            indexed by input feature name_snp: pos_0, pos_1, pos_2
 //            1 TRLWE packs the N samples
-const double IdashParams::IN_SCALING_FACTOR = 1. / 1024;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
+const double IdashParams::IN_SCALING_FACTOR = 1. / 16384;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
 
 const double IdashParams::ONE_IN_D = IN_SCALING_FACTOR;
 const double IdashParams::NAN_0_IN_D =

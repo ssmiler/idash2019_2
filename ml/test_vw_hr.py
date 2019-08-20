@@ -46,8 +46,8 @@ df_model = pd.DataFrame(data=models_coefs)
 df_model.fillna(0, inplace=True)
 
 # parse tag SNPs data
-df_tag = pd.read_pickle(args.tag_file)[args.ignore_first:]
-df_target = pd.read_pickle(args.target_file)[args.ignore_first:]
+df_tag = pd.read_pickle(args.tag_file)
+df_target = pd.read_pickle(args.target_file)
 
 # one-hot-encode SNPs and create a dataframe with "snp_val" columns
 enc = sklearn.preprocessing.OneHotEncoder(categories = [[0, 1, 2]] * df_tag.shape[1], sparse=False)
@@ -64,23 +64,14 @@ X = X.loc[:,df_model.index]
 
 target_snps = np.unique(df_model.columns.map(lambda e: e.split('_')[0]))
 
-# rescale model coefficients to integers (individually per SNP model)
+# rescale model coefficients to integers
 if args.scale:
-  for target_snp in target_snps:
+  # compute predictions
+  df_pred = X.dot(df_model)
 
-    # get models for a given SNP
-    col_idx = df_model.columns.str.startswith(target_snp)
-    assert(col_idx.sum() == 3)
-    df_model_snp = df_model.loc[:, col_idx]
-
-    # compute the 3 predictions for a SNP
-    df_pred = X.dot(df_model_snp)
-
-    # rescale model so that output range is args.out_range
-    out_scale_factor = args.output_range / (df_pred.max().max() - df_pred.min().min())
-    df_model_snp *= out_scale_factor
-
-    df_model.loc[:,col_idx] = df_model_snp
+  # rescale model so that output range is args.out_range
+  out_scale_factor = args.output_range / (df_pred.max().max() - df_pred.min().min())
+  df_model *= out_scale_factor
 
   # map model to integer coefficients
   df_model = (df_model * args.scale).round().astype(int)
@@ -91,53 +82,22 @@ if args.scale:
 # make predictions
 df_pred = X.dot(df_model)
 
-# print("Model coefficients range:")
-# print(df_model.describe().loc[['min','max']].T)
-
-# print("Model output range: ")
-# df = df_pred.describe().loc[['min','max']].T
-# df.loc[:,'range'] = df.loc[:,'max'] - df.loc[:,'min']
-# print(df)
-
-# compute
-vals_dict = dict()
-for target_snp in target_snps:
-  y_pred = df_pred.loc[:,df_pred.columns.str.startswith(target_snp)]
-  assert(y_pred.shape[1] == 3)
-  y_pred.columns = y_pred.columns.map(lambda e: int(e.split('_')[1]))
-
-  y_test = y_pred.copy().astype(np.int8)
-  y_test[:] = 0
-
-  vals = list()
-  for k in range(3):
-    y_test.loc[:,k] = (df_target.loc[:,int(target_snp)] == k)+0
-
-    try:
-      val = sklearn.metrics.roc_auc_score(y_test.loc[:,k], y_pred.loc[:,k])
-      vals.append(val)
-    except:
-      vals.append("")
-
-  vals.append(sklearn.metrics.roc_auc_score(y_test.values, y_pred.values , average='micro'))
-  vals_dict[target_snp] = dict(zip(["auc_0","auc_1","auc_2","auc"], vals))
-
-df_vals = pd.DataFrame(vals_dict).T
-df_vals.sort_index(inplace=True)
-print(df_vals.to_string())
-print("Mean AUC score: {}".format(df_vals.auc.mean()))
-
-df_test = np.zeros(shape=df_pred.shape, dtype = int)
+# compute score
+df_test = np.zeros(shape=df_pred.shape, dtype = np.int8)
+df_test = pd.DataFrame(data=df_test, columns=df_pred.columns, index=df_pred.index, dtype=np.int8)
 for target_snp in target_snps:
   for k in range(3):
-    df_test[:, df_pred.columns == target_snp + '_' + str(k)] = ((df_target.loc[:,int(target_snp)] == k)+0).values.reshape(-1,1)
-print("Micro-AUC score: {}".format(sklearn.metrics.roc_auc_score(df_test, df_pred, average='micro')))
+    df_test.iloc[:, df_pred.columns == target_snp + '_' + str(k)] = ((df_target.loc[:,int(target_snp)] == k)+0).values.reshape(-1,1)
+  path = "/".join(args.models[0].split("/")[:-1])
+print("Micro-AUC score: {:.8} ({})".format(sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:], df_pred.iloc[args.ignore_first:], average='micro'), path))
 
-
+# output models and predictions
 if args.out_dir:
   for model_name, coeffs in df_model.items():
     coeffs = coeffs[coeffs!=0]
     file_name = "{}/{}.hr".format(args.out_dir, model_name)
     open(file_name, "w").writelines(map(lambda e: '{} {}\n'.format(*e), coeffs.items()))
 
-  df_pred.to_csv("{}/predictions".format(args.out_dir))
+  # df_pred.to_csv("{}/pred.csv".format(args.out_dir))
+  # df_test.to_csv("{}/test.csv".format(args.out_dir))
+
