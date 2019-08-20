@@ -2,7 +2,7 @@
 CHALLENGE_FILE="../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
 TARGET_HEADERS="../../data/sorted_target_SNP_genotypes.txt"
 TARGET_FILE="../../data/sorted_target_SNP_genotypes.txt"
-ML_DIR="../../ml"
+ML_DIR=../../ml
 MODEL_FILE="${ML_DIR}/model/10k"
 #MODEL_FILE="${ML_DIR}/model/1k"
 
@@ -18,7 +18,7 @@ TIME_CMD=/usr/bin/time -l
 CMAKE_OPTIONS=-DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_NAYUKI_AVX=off
 endif
 
-all: bin/keygen params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
+all: bin/keygen ../../ml/model/10k params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
 
 clean:
 	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv || true
@@ -33,6 +33,9 @@ build:
 
 bin/keygen:
 	make build
+
+../../ml/model/10k:
+	../../ml/model/uncompress-models.sh
 
 keys.bin:
 	@echo ===============================================================
