@@ -1,10 +1,6 @@
-#CHALLENGE_FILE="../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
-CHALLENGE_FILE="../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
-TARGET_HEADERS="../../data/sorted_target_SNP_genotypes.txt"
-TARGET_FILE="../../data/sorted_target_SNP_genotypes.txt"
-ML_DIR=../../ml
-MODEL_FILE="${ML_DIR}/model/10k"
-#MODEL_FILE="${ML_DIR}/model/1k"
+CONF=Makefile-10k
+#CONF=Makefile-1k
+include ${CONF} 
 
 # LINUX vs. OSX specifics
 UNAME:=$(shell uname)
