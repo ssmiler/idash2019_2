@@ -1,5 +1,5 @@
-CONF=Makefile-10k
-#CONF=Makefile-1k
+CONF=Makefile-10k.inc
+#CONF=Makefile-1k.inc
 include ${CONF} 
 
 # LINUX vs. OSX specifics
@@ -65,4 +65,4 @@ result_bypos.csv: result.csv
 	@[ -f $@ ] # verify that the target is present
 
 auc: result_bypos.csv
-	python3 ${ML_DIR}/validate.py --pred_file result_bypos.csv --target_file ${TARGET_FILE} -i 2250
+	python3 ../../ml/validate.py --pred_file result_bypos.csv --target_file ${TARGET_FILE} -i 2250
