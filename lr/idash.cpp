@@ -24,7 +24,7 @@ const TLweParams *IdashParams::tlweParams = new_TLweParams(IdashParams::N, Idash
 // enc_data = one hot encoding of input / SCALING_FACTOR
 //            indexed by input feature name_snp: pos_0, pos_1, pos_2
 //            1 TRLWE packs the N samples
-const double IdashParams::IN_SCALING_FACTOR = 1. / 1024;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
+const double IdashParams::IN_SCALING_FACTOR = 1. / 16384;   // upon encryption, scale by IN_SCALING_FACTOR : double -> [-2^31,2^31[ //TODO check with Sergiu
 
 const double IdashParams::ONE_IN_D = IN_SCALING_FACTOR;
 const double IdashParams::NAN_0_IN_D =
@@ -375,6 +375,12 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     tlweKey = new_TLweKey(idashParams->tlweParams);
     tLweKeyGen(tlweKey);
     IdashKey *key = new IdashKey(idashParams, tlweKey);
+
+    cout << "target_file (headers): " << targetFile << endl;
+    cout << "tag_file: " << challengeFile << endl;
+    cout << "NUM_SAMPLES: " << idashParams->NUM_SAMPLES << endl;
+    cout << "NUM_TARGET_POSITIONS: " << idashParams->NUM_OUTPUT_POSITIONS << endl;
+    cout << "NUM_TAG_POSITIONS: " << idashParams->NUM_INPUT_POSITIONS << endl;
     return key;
 }
 
@@ -573,14 +579,24 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
     const uint64_t NUM_SAMPLES = params.NUM_SAMPLES;
     REQUIRE_DRAMATICALLY(plain_data.data.size() == params.NUM_INPUT_POSITIONS, "Incomplete plaintext");
     //fill enc_data with ciphertexts of zero
+    //pre-encrypt a pool of ciphertexts of zero
+    const uint64_t NUM_CIPHERTEXTS = (params.NUM_INPUT_FEATURES+params.NUM_REGIONS-1)/params.NUM_REGIONS;
+    TLweSample* pool = new_TLweSample_array(NUM_CIPHERTEXTS, params.tlweParams);
+#pragma omp parallel for
+    for (uint64_t i=0; i<NUM_CIPHERTEXTS; ++i) {
+        tLweSymEncryptZero(pool+i, params.alpha, key.tlweKey);
+    }
+    TLweSample* nextSample = pool;
     for (const auto &it: plain_data.data) {
         const uint64_t &pos = it.first;
         const std::vector<int8_t> &values = it.second;
         REQUIRE_DRAMATICALLY(values.size() == NUM_SAMPLES, "plaintext dimensions inconsistency");
-        enc_data.ensure_exists(params.inBigIdx(pos, 0), key);
-        enc_data.ensure_exists(params.inBigIdx(pos, 1), key);
-        enc_data.ensure_exists(params.inBigIdx(pos, 2), key);
+        enc_data.ensure_exists(params.inBigIdx(pos, 0), nextSample, params);
+        enc_data.ensure_exists(params.inBigIdx(pos, 1), nextSample, params);
+        enc_data.ensure_exists(params.inBigIdx(pos, 2), nextSample, params);
     }
+    REQUIRE_DRAMATICALLY(nextSample<=pool+NUM_CIPHERTEXTS, "memory error");
+    REQUIRE_DRAMATICALLY(nextSample>=pool+NUM_CIPHERTEXTS-10, "memory pb");
     //add the actual scores
     for (const auto &it: plain_data.data) {
         const uint64_t &pos = it.first;
