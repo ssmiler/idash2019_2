@@ -9,7 +9,7 @@ parser.add_argument('--scale', type=int, help='one-hot-encoded SNPs scaling fact
 parser.add_argument('--out_dir', type=str, help='export scaled models to this path (if given)')
 
 args = parser.parse_args()
-# args = parser.parse_args('-m model/vw/10k/18170885_0.model.hr model/vw/10k/18170885_1.model.hr model/vw/10k/18170885_2.model.hr'.split())
+# args = parser.parse_args('-m 25650631_0.model.hr 25650631_1.model.hr 25650631_2.model.hr'.split())
 
 args.__dict__['output_range'] = 1/2
 
@@ -23,6 +23,8 @@ import os
 def parse_vw_hr_model(file_name):
   lines = open(file_name).readlines()
 
+  alphas = list(map(lambda line: float(line.split()[-1]), filter(lambda line: line.startswith("alpha"), lines)))
+
   for k,line in enumerate(lines):
     if line.startswith(":0\n"): break
 
@@ -32,22 +34,46 @@ def parse_vw_hr_model(file_name):
   for line in lines:
     feat,_,coef = line.split(":")
     model[feat] = float(coef)
+  if len(alphas) == 0: alphas = None
 
-  return model
+  return model, alphas
 
 #parse models
 models_coefs = dict()
 for model in args.models:
-  coefs = parse_vw_hr_model(model)
+  coefs,alphas = parse_vw_hr_model(model)
   model = os.path.basename(model).split('.')[0]
-  models_coefs[model] = coefs
+
+  models_coefs[model] = dict(filter(lambda e: '[' not in e[0], coefs.items()))
+  if alphas: models_coefs[model]["alpha"] = alphas[0]
+
+  #split coefficients by individual models
+  for k in range(1,20): # up to 20 models
+    s = '[{}]'.format(k)
+    tmp = dict(filter(lambda e: e[0].endswith(s), coefs.items()))
+    if len(tmp) == 0: break
+    models_coefs[model+s] = dict(map(lambda e: (e[0][:-len(s)],e[1]), tmp.items()))
+    if alphas: models_coefs[model+s]["alpha"] = alphas[k]
 
 df_model = pd.DataFrame(data=models_coefs)
 df_model.fillna(0, inplace=True)
 
+if "alpha" not in df_model.index:
+  df_model.loc["alpha",:] = 1
+
+df_model *= df_model.loc["alpha",:]
+df_model.drop("alpha", axis=0, inplace=True)
+
+# average model coefficients for same target
+for target in filter(lambda e: '[' not in e, df_model.columns):
+  target_cols = set(df_model.columns[df_model.columns.str.startswith(target)])
+  df_model.loc[:,target] = df_model.loc[:,target_cols].mean(axis=1)
+# keep only the average model
+df_model = df_model.loc[:,filter(lambda e: '[' not in e, df_model.columns)]
+
 # parse tag SNPs data
-df_tag = pd.read_pickle(args.tag_file)[args.ignore_first:]
-df_target = pd.read_pickle(args.target_file)[args.ignore_first:]
+df_tag = pd.read_pickle(args.tag_file)
+df_target = pd.read_pickle(args.target_file)
 
 # one-hot-encode SNPs and create a dataframe with "snp_val" columns
 enc = sklearn.preprocessing.OneHotEncoder(categories = [[0, 1, 2]] * df_tag.shape[1], sparse=False)
@@ -64,23 +90,14 @@ X = X.loc[:,df_model.index]
 
 target_snps = np.unique(df_model.columns.map(lambda e: e.split('_')[0]))
 
-# rescale model coefficients to integers (individually per SNP model)
+# rescale model coefficients to integers
 if args.scale:
-  for target_snp in target_snps:
+  # compute predictions
+  df_pred = X.dot(df_model)
 
-    # get models for a given SNP
-    col_idx = df_model.columns.str.startswith(target_snp)
-    assert(col_idx.sum() == 3)
-    df_model_snp = df_model.loc[:, col_idx]
-
-    # compute the 3 predictions for a SNP
-    df_pred = X.dot(df_model_snp)
-
-    # rescale model so that output range is args.out_range
-    out_scale_factor = args.output_range / (df_pred.max().max() - df_pred.min().min())
-    df_model_snp *= out_scale_factor
-
-    df_model.loc[:,col_idx] = df_model_snp
+  # rescale model so that output range is args.out_range
+  out_scale_factor = args.output_range / (df_pred.max().max() - df_pred.min().min())
+  df_model *= out_scale_factor
 
   # map model to integer coefficients
   df_model = (df_model * args.scale).round().astype(int)
@@ -91,44 +108,30 @@ if args.scale:
 # make predictions
 df_pred = X.dot(df_model)
 
-# print("Model coefficients range:")
-# print(df_model.describe().loc[['min','max']].T)
-
-# print("Model output range: ")
-# df = df_pred.describe().loc[['min','max']].T
-# df.loc[:,'range'] = df.loc[:,'max'] - df.loc[:,'min']
-# print(df)
-
-# compute
-vals_dict = dict()
+# compute score
+df_test = np.zeros(shape=df_pred.shape, dtype = np.int8)
+df_test = pd.DataFrame(data=df_test, columns=df_pred.columns, index=df_pred.index, dtype=np.int8)
 for target_snp in target_snps:
-  y_pred = df_pred.loc[:,df_pred.columns.str.startswith(target_snp)]
-  assert(y_pred.shape[1] == 3)
-  y_pred.columns = y_pred.columns.map(lambda e: int(e.split('_')[1]))
+  for col in filter(lambda e: e.startswith(target_snp), df_pred.columns):
+    buf = col[:-3] if '[' in col else col
+    k = int(buf[len(target_snp)+1:len(target_snp)+2])
+    df_test.loc[:, col] = ((df_target.loc[:,int(target_snp)] == k)+0).values.reshape(-1,1)
 
-  y_test = y_pred.copy().astype(np.int8)
-  y_test[:] = 0
+# print(sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:], df_pred.iloc[args.ignore_first:], average=None))
+tmp = args.models[0].split("/")
+path = "/".join(tmp[:-1])
+k = tmp[-1].find("_")
+k = tmp[-1].find("_", k+1)
+path += "/*_?" + tmp[-1][k:]
+print("Micro-AUC score: {:.8} ({})".format(sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:], df_pred.iloc[args.ignore_first:], average='micro'), path))
 
-  vals = list()
-  for k in range(3):
-    y_test.loc[:,k] = (df_target.loc[:,int(target_snp)] == k)+0
-
-    try:
-      val = sklearn.metrics.roc_auc_score(y_test.loc[:,k], y_pred.loc[:,k])
-      vals.append(val)
-    except:
-      vals.append("")
-
-  vals.append(sklearn.metrics.roc_auc_score(y_test.values, y_pred.values, average='micro'))
-  vals_dict[target_snp] = dict(zip(["auc_0","auc_1","auc_2","auc"], vals))
-
-df_vals = pd.DataFrame(vals_dict).T
-print(df_vals)
-print("Mean AUC score: {}".format(df_vals.auc.mean()))
-
+# output models and predictions
 if args.out_dir:
   for model_name, coeffs in df_model.items():
     coeffs = coeffs[coeffs!=0]
     file_name = "{}/{}.hr".format(args.out_dir, model_name)
     open(file_name, "w").writelines(map(lambda e: '{} {}\n'.format(*e), coeffs.items()))
+
+  df_pred.to_csv("{}/pred.csv".format(args.out_dir))
+  df_test.to_csv("{}/test.csv".format(args.out_dir))
 
