@@ -55,7 +55,7 @@ function learn()
     # params+="-q :: --leave_duplicate_interactions " #quadratic interactions
 
     declare -A opt_params=(
-      # ["orig"]=""
+      ["orig"]=""
       # ["bs=5"]="--bootstrap 5"
       # ["bs=5_rw"]="--bootstrap 5 --random_weights 1"
       # ["bs=10"]="--bootstrap 10"
