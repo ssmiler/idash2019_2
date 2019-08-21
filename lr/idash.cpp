@@ -16,7 +16,7 @@ using namespace std;
 //const uint32_t IdashParams::N = 1024;              // TRLWE dimension
 //const uint32_t IdashParams::k = 1;                 // k is always 1
 const double IdashParams::alpha = pow(2.,
-                                      -20.);   // minimal noise  (around 190 bits of security regarding the standardization document)
+                                      -25.);   // minimal noise  (around 190 bits of security regarding the standardization document)
 //const uint32_t IdashParams::REGION_SIZE = IdashParams::N / IdashParams::NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
 const TLweParams *IdashParams::tlweParams = new_TLweParams(IdashParams::N, IdashParams::k, IdashParams::alpha, 0.25);
 
