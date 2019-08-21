@@ -1,6 +1,6 @@
 CONF=Makefile-10k.inc
 #CONF=Makefile-1k.inc
-include ${CONF} 
+include ${CONF}
 
 # LINUX vs. OSX specifics
 UNAME:=$(shell uname)
@@ -17,7 +17,7 @@ endif
 all: bin/keygen ../../ml/model/10k params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
 
 clean:
-	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv || true
+	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv auc.png target.csv ypred.csv || true
 
 distclean: clean
 	rm -rf bin || true
@@ -64,5 +64,11 @@ result.csv: keys.bin encrypted_prediction.bin
 result_bypos.csv: result.csv
 	@[ -f $@ ] # verify that the target is present
 
-auc: result_bypos.csv
-	python3 ../../ml/validate.py --pred_file result_bypos.csv --target_file ${TARGET_FILE} -i 2250
+target.csv: result.csv
+	python3 ../lr2eval.py -i result.csv -t ${TARGET_FILE} -o target.csv
+
+auc: result.csv target.csv
+	python3 ../evaluation.py -i result.csv -t target.csv -o auc.png
+
+auc_our: result_bypos.csv
+	python3 ../../ml/validate.py --pred_file result_bypos.csv --target_file ${TARGET_FILE}
