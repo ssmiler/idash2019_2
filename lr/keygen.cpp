@@ -1,17 +1,14 @@
 #include "idash.h"
-#include <fstream>
-#include <sstream>
 
 int main(int argc, char** argv) {
-    if (argc < 3) {
-        DIE_DRAMATICALLY("Please provide target and tag files")
-    }
-
-    const std::string targetFile = argv[1];
-    const std::string challengeFile = argv[2];
-
+    std::string targetFile = TARGET_FILE;
+    std::string challengeFile = CHALLENGE_FILE;
+    if (argc>=2) targetFile = argv[1];
+    if (argc>=3) challengeFile = argv[2];
+    std::cout << "using target file (headers): " << targetFile << std::endl;
+    std::cout << "using tag file (challenge): " << challengeFile << std::endl;
 
     IdashKey *key = keygen(targetFile, challengeFile);
-    write_params(*key->idashParams, "params_filename");
-    write_key(*key, "key_filename");
+    write_params(*key->idashParams, PARAMS_FILE);
+    write_key(*key, KEYS_FILE);
 }
