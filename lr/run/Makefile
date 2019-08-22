@@ -16,7 +16,7 @@ ifeq (${UNAME}, Darwin)
 CMAKE_OPTIONS=-DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_NAYUKI_AVX=off
 endif
 
-all: bin/keygen params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
+all: bin/keygen ../../ml/model/10k_a params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc.png
 
 clean:
 	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv auc.png target.csv ypred.csv || true
@@ -34,6 +34,9 @@ bin/keygen:
 
 uncompress:
 	../../ml/model/uncompress-models.sh
+
+../../ml/model/10k_a:
+	make uncompress
 
 keys.bin:
 	@echo ===============================================================
