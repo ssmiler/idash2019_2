@@ -123,7 +123,9 @@ path = "/".join(tmp[:-1])
 k = tmp[-1].find("_")
 k = tmp[-1].find("_", k+1)
 path += "/*_?" + tmp[-1][k:]
-print("Micro-AUC score: {:.8} ({})".format(sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:], df_pred.iloc[args.ignore_first:], average='micro'), path))
+score1=sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:], df_pred.iloc[args.ignore_first:], average='micro')
+score2=sklearn.metrics.roc_auc_score(df_test, df_pred, average='micro')
+print("Micro-AUC score: {:.8} ({:.8} {})".format(score1, score2, path))
 
 # output models and predictions
 if args.out_dir:
