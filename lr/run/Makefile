@@ -1,5 +1,9 @@
-CONF=Makefile-10k.inc
-#CONF=Makefile-1k.inc
+CONF=Makefile-10k_a.inc
+# CONF=Makefile-10k_b.inc
+# CONF=Makefile-10k_c.inc
+#CONF=Makefile-1k_a.inc
+#CONF=Makefile-1k_b.inc
+#CONF=Makefile-1k_c.inc
 include ${CONF}
 
 # LINUX vs. OSX specifics
@@ -14,7 +18,7 @@ TIME_CMD=/usr/bin/time -l
 CMAKE_OPTIONS=-DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_NAYUKI_AVX=off
 endif
 
-all: bin/keygen ../../ml/model/10k params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
+all: bin/keygen params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
 
 clean:
 	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv auc.png target.csv ypred.csv || true
@@ -30,7 +34,7 @@ build:
 bin/keygen:
 	make build
 
-../../ml/model/10k:
+uncompress:
 	../../ml/model/uncompress-models.sh
 
 keys.bin:
