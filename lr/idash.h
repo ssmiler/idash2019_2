@@ -250,4 +250,24 @@ compute_score(DecryptedPredictions &predictions, const PlaintextData &X, const M
 IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile);
 
 
+/** @brief Class for timing a scope. Starting upon construction. */
+class Profiler {
+public:
+    Profiler();
+    /** @brief Returns the wall time. */
+    static double universalWallTime();
+    /** @brief Returns the clock time. */
+    static double universalClockTime();
+    /** @brief Retrieves the wall time. */
+    double walltime() const;
+    /** @brief Retrieves the CPU time. */
+    double clocktime() const;
+    /** @brief Retrieves the maximum resident set size in bytes. */
+    long int maxrss() const;
+private:
+    const double tw0;   /* initial wall time value */
+    const double tc0;   /* initial clock time value */
+};
+
+
 #endif //IDASH_2019_IDASH_H
