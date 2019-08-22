@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     write_params(*key->idashParams, PARAMS_FILE);
     write_key(*key, KEYS_FILE);
 
-    std::cout << "BENCHMARK:" << std::endl;
-    std::cout << "wall time (seconds): " <<  profiler.walltime() << std::endl;
-    std::cout << "RAM (MB): " <<  profiler.maxrss()  / 1e6 << std::endl;
+    std::cout << "----------------- BENCHMARK ----------------- " << std::endl;
+    std::cout << "Total wall time (seconds)........: " <<  profiler.walltime() << std::endl;
+    std::cout << "RAM usage (MB)...................: " <<  profiler.maxrss()  / 1e6 << std::endl;
 }

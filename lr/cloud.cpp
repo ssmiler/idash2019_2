@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     std::cout << "fhe wall time (seconds)..........: " <<  time_end_cloud-time_start_cloud << std::endl;
     std::cout << "serialization wall time (seconds): " <<  time_write_end - time_end_cloud + time_start_cloud << std::endl;
     std::cout << "total wall time (seconds)........: " <<  time_write_end << std::endl;
-    std::cout << "RAM (MB).........................: " <<  profiler.maxrss() / 1e6 << std::endl;
+    std::cout << "RAM usage (MB)...................: " <<  profiler.maxrss() / 1e6 << std::endl;
 
 }
 
