@@ -12,7 +12,7 @@ ifeq (${UNAME}, Darwin)
 CMAKE_OPTIONS=-DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_NAYUKI_AVX=off
 endif
 
-all: bin/keygen ../../ml/model/10k params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc
+all: bin/keygen ../../ml/model/10k params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc.png
 
 clean:
 	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv auc.png target.csv ypred.csv || true
@@ -64,10 +64,12 @@ result_bypos.csv: keys.bin encrypted_prediction.bin
 	@[ -f $@ ] # verify that the target is present
 
 target.csv: result.csv
-	python3 ../lr2eval.py -i result.csv -t ${TARGET_FILE} -o target.csv
+	if [ -f ${TARGET_FILE} ]; then python3 ../lr2eval.py -i result.csv -t ${TARGET_FILE} -o target.csv; fi
+	@[ -f $@ ] # verify that the target is present
 
-auc: result.csv target.csv
+auc.png: result.csv target.csv
 	python3 ../evaluation.py -i result.csv -t target.csv -o auc.png
+	@[ -f $@ ] # verify that the target is present
 
 auc_our: result_bypos.csv
 	python3 ../../ml/validate.py --pred_file result_bypos.csv --target_file ${TARGET_FILE}
