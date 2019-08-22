@@ -9,7 +9,7 @@ if [ -n "$3" ]; then
   model_suffix=_final
 fi
 
-echo $tag_type $neighbors $train_len
+echo $tag_type $neighbors $train_len $model_suffix
 
 model_out_path=model/vw/$tag_type"_"neighbors=$neighbors$model_suffix/
 mkdir -p $model_out_path
