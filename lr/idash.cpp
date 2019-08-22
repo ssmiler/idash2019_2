@@ -847,4 +847,42 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
     }
 }
 
+// ---------- profiler class ---------------------------
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <time.h>
+
+
+Profiler::Profiler() : tw0(Profiler::universalWallTime()), tc0(Profiler::universalClockTime()) {}
+
+/* static */ double Profiler::universalWallTime() {
+    struct timeval time;
+
+    if (gettimeofday(&time, nullptr))
+        return 0;
+
+    return (double) time.tv_sec + (double) time.tv_usec * 1E-6;
+}
+
+/* static */ double Profiler::universalClockTime() {
+    return (double) clock() / CLOCKS_PER_SEC;
+}
+
+double Profiler::walltime() const { return universalWallTime() - tw0; }
+double Profiler::clocktime() const { return universalClockTime() - tc0; }
+
+long int Profiler::maxrss() const {
+    struct rusage usage;
+
+    if (!getrusage(RUSAGE_SELF, &usage)) {
+#ifndef __APPLE__
+        return usage.ru_maxrss * 1000;
+#else
+        return usage.ru_maxrss;
+#endif
+    } else {
+        return -1;
+    }
+}
+
 
