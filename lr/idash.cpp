@@ -16,7 +16,7 @@ using namespace std;
 //const uint32_t IdashParams::N = 1024;              // TRLWE dimension
 //const uint32_t IdashParams::k = 1;                 // k is always 1
 const double IdashParams::alpha = pow(2.,
-                                      -20.);   // minimal noise  (around 190 bits of security regarding the standardization document)
+                                      -25.);   // minimal noise  (around 190 bits of security regarding the standardization document)
 //const uint32_t IdashParams::REGION_SIZE = IdashParams::N / IdashParams::NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
 const TLweParams *IdashParams::tlweParams = new_TLweParams(IdashParams::N, IdashParams::k, IdashParams::alpha, 0.25);
 
@@ -844,6 +844,44 @@ void compute_score(DecryptedPredictions &predictions, const PlaintextData &X,
         //     predictions.score[outPos][1][sampleId] = pred[1] / norm;
         //     predictions.score[outPos][2][sampleId] = pred[2] / norm;
         // }
+    }
+}
+
+// ---------- profiler class ---------------------------
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <time.h>
+
+
+Profiler::Profiler() : tw0(Profiler::universalWallTime()), tc0(Profiler::universalClockTime()) {}
+
+/* static */ double Profiler::universalWallTime() {
+    struct timeval time;
+
+    if (gettimeofday(&time, nullptr))
+        return 0;
+
+    return (double) time.tv_sec + (double) time.tv_usec * 1E-6;
+}
+
+/* static */ double Profiler::universalClockTime() {
+    return (double) clock() / CLOCKS_PER_SEC;
+}
+
+double Profiler::walltime() const { return universalWallTime() - tw0; }
+double Profiler::clocktime() const { return universalClockTime() - tc0; }
+
+long int Profiler::maxrss() const {
+    struct rusage usage;
+
+    if (!getrusage(RUSAGE_SELF, &usage)) {
+#ifndef __APPLE__
+        return usage.ru_maxrss * 1000;
+#else
+        return usage.ru_maxrss;
+#endif
+    } else {
+        return -1;
     }
 }
 
