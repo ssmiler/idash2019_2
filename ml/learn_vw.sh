@@ -1,37 +1,37 @@
 jobs=4
 
 neighbors=$1
-tag_type=$2
 
-train_len=2250
-if [ -n "$3" ]; then
-  train_len=$3
+train_len=1200
+
+if [ -n "$2" ]
+then
+  train_len=$2
   model_suffix=_final
 fi
 
-echo $tag_type $neighbors $train_len $model_suffix
+echo $neighbors $train_len $model_suffix
 
-model_out_path=model/vw/$tag_type"_"neighbors=$neighbors$model_suffix/
+model_out_path=model/vw/neighbors=$neighbors$model_suffix
 mkdir -p $model_out_path
 
 target_snp=`cat data/target_snp`
 # target_snp=`head -n 2 data/target_snp`
-# target_snp="25650631"
+# target_snp="16051248"
 
 function learn()
 {
   pos=$1
-  tag_type=$2
-  neighbors=$3
-  train_len=$4
-  model_out_path=$5
+  neighbors=$2
+  train_len=$3
+  model_out_path=$4
 
   data_out_path=/dev/shm
 
-  # echo $pos $tag_type $neighbors $model_out_path $train_len
+  echo $pos $neighbors $model_out_path $train_len
 
   # export data
-  python3 to_vw.py -n $neighbors --tag_file data/snp_tag_$tag_type.pickle -s $pos -o $data_out_path
+  python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file data/tag_training.pickle --target_file data/target_training.pickle
   rm $data_out_path/$pos.y
 
   file_X=$data_out_path/$pos.X
@@ -42,7 +42,7 @@ function learn()
     model=$model_out_path/$pos"_"$snp.model
     cache=$model.cache
 
-    id="$pos"_"$snp:$tag_type"
+    id="$pos"_"$snp"
     id+=":neighbors=$neighbors"
     id+=":train_samples=`paste -d ' ' $file_y $file_X | head -n $train_len | wc -l`"
 
@@ -83,7 +83,8 @@ function learn()
   rm $file_X
 }
 export -f learn
-parallel -j $jobs learn {} $tag_type $neighbors $train_len $model_out_path ::: $target_snp
+
+parallel -j $jobs learn {} $neighbors $train_len $model_out_path ::: $target_snp
 
 exit
 

@@ -7,24 +7,21 @@ def read_and_transform(inp_file):
   df = df[4:].astype(np.int8).reset_index(drop=True)  # drop first 4 rows and transform SNP values to int8
   return df
 
-# def one_hot_encode(df):
-#   d=dict()
-#   for name, col in df.iteritems():
-#     d[name] = str(name) + '_' + col.apply(str)
-#   return pd.DataFrame(d)
+df = read_and_transform('../data/tag_training.txt')
+df.to_pickle('data/tag_training.pickle')
 
-df1 = read_and_transform('challenge_public/sorted_target_SNP_genotypes.txt')
-df1.to_pickle('data/snp_target.pickle')
+df = pd.concat((df, read_and_transform('../data/tag_testing.txt')), axis=0)
+df.to_pickle('data/tag_full.pickle')
 
-df2 = read_and_transform('challenge_public/sorted_tag_SNPs_1k_genotypes.txt')
-# df2 = one_hot_encode(df2)
-df2.to_pickle('data/snp_tag_1k.pickle')
+print(df.shape)
 
-df3 = read_and_transform('challenge_public/sorted_tag_SNPs_10k_genotypes.txt')
-# df3 = one_hot_encode(df3)
-df3.to_pickle('data/snp_tag_10k.pickle')
+df = read_and_transform('../data/target_training.txt')
+df.to_pickle('data/target_training.pickle')
 
-assert(df1.shape[0] == df2.shape[0])
-assert(df1.shape[0] == df3.shape[0])
+df = pd.concat((df, read_and_transform('../data/target_testing.txt')), axis=0)
+df.to_pickle('data/target_full.pickle')
 
-open("data/target_snp","w").write("\n".join(map(str, df1.columns)))
+print(df.shape)
+
+open("data/target_snp","w").write("\n".join(map(str, df.columns)))
+

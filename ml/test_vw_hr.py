@@ -2,8 +2,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Test VW human-readable model')
 parser.add_argument('-m', '--models', nargs='+', type=str, required=True, help='.hr model prefix')
-parser.add_argument('--tag_file', type=str, default='data/snp_tag_10k.pickle', help='input tag file')
-parser.add_argument('--target_file', type=str, default='data/snp_target.pickle', help='input target file')
+parser.add_argument('--tag_file', type=str, default='data/tag_training.pickle', help='input tag file')
+parser.add_argument('--target_file', type=str, default='data/target_training.pickle', help='input target file')
 parser.add_argument('-i', '--ignore_first', type=int, default=0, help='Ignore first lines')
 parser.add_argument('--scale', type=int, help='one-hot-encoded SNPs scaling factor, ie input features are encoded as 1/<scale>')
 parser.add_argument('--out_dir', type=str, help='export scaled models to this path (if given)')
