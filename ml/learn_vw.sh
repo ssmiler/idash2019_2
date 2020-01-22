@@ -1,4 +1,4 @@
-jobs=4
+jobs=10
 
 neighbors=$1
 
@@ -16,8 +16,10 @@ model_out_path=model/vw/neighbors=$neighbors$model_suffix
 mkdir -p $model_out_path
 
 target_snp=`cat data/target_snp`
-# target_snp=`head -n 2 data/target_snp`
+# target_snp=`head -n 20 data/target_snp`
 # target_snp="16051248"
+
+cp data/ta*_training.pickle /dev/shm
 
 function learn()
 {
@@ -31,7 +33,7 @@ function learn()
   echo $pos $neighbors $model_out_path $train_len
 
   # export data
-  python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file data/tag_training.pickle --target_file data/target_training.pickle
+  python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file /dev/shm/tag_training.pickle --target_file /dev/shm/target_training.pickle
   rm $data_out_path/$pos.y
 
   file_X=$data_out_path/$pos.X
@@ -52,6 +54,7 @@ function learn()
     params+="--holdout_off "
     params+="--passes 200 "
     params+="--id $id "
+    # params+="--threads 1 "
     # params+="-q :: --leave_duplicate_interactions " #quadratic interactions
 
     declare -A opt_params=(
@@ -85,6 +88,8 @@ function learn()
 export -f learn
 
 parallel -j $jobs learn {} $neighbors $train_len $model_out_path ::: $target_snp
+
+rm /dev/shm/*.pickle
 
 exit
 
