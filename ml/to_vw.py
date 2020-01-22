@@ -2,8 +2,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Stream VW for 1 SNP')
 parser.add_argument('-s', '--target_snp', type=int, required=True, help='target SNP')
 parser.add_argument('-n', '--neighbors', type=int, default=20, help='number of tag SNP neighbors to output')
-parser.add_argument('--tag_file', type=str, default='data/snp_tag_10k.pickle', help='input tag file')
-parser.add_argument('--target_file', type=str, default='data/snp_target.pickle', help='input target file')
+parser.add_argument('--tag_file', type=str, default='data/tag_training.pickle', help='input tag file')
+parser.add_argument('--target_file', type=str, default='data/target_training.pickle', help='input target file')
 parser.add_argument('-o', '--out_dir', type=str, required=True, help='output path')
 
 args = parser.parse_args()
