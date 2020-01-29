@@ -2,7 +2,8 @@ import pandas as pd
 import numpy as np
 
 def read_and_transform(inp_file):
-  df = pd.read_csv(inp_file, sep='\t', header=None).T # read input csv file and transpose
+  df = pd.read_csv(inp_file, sep='\t', header=None)  # read input csv file
+  df = df.drop_duplicates(subset=[1,2]).T
   df.columns = df.loc[1,:].astype(int).values         # set SNP position as column index
   df = df[4:].astype(np.int8).reset_index(drop=True)  # drop first 4 rows and transform SNP values to int8
   return df
