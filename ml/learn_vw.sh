@@ -1,4 +1,4 @@
-jobs=10
+jobs=16
 
 neighbors=$1
 
