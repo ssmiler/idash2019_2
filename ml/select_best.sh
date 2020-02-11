@@ -5,16 +5,21 @@ suffix=full
 train_len=1500
 
 # learn models for different neighborhoods
-for n in 10 20 30 40 50 60 70 80 90 
+#neighbours="10 20 30 40 50 60 70 80"
+neighbours="25 35 45"
+for n in $neighbours
 do
-    bash learn_vw.sh $n $train_len
+    time bash learn_vw.sh $n $train_len
 done
 
 exit
 
 # compute predictions score for each model
-vw_paths=model/vw/neighbors\=??
-parallel -j 10 -k python3 test_vw_hr.py -m {1}/*_?_orig.hr -i $train_len  --tag_file data/tag_$suffix.pickle --target_file data/target_$suffix.pickle ::: $vw_paths
+for n in $neighbours
+do
+    time python3 test_vw_hr.py -m "model/vw/neighbors="$n"_final/*_orig.hr" -i $train_len  --tag_file data/tag_$suffix.pickle --target_file data/target_$suffix.pickle > result_$n.log &
+done
+wait 
 
 exit
 
@@ -28,6 +33,12 @@ vals+="60,94.01410409300001 "
 vals+="70,93.97800534000001 "
 vals+="80,93.8814865837 "
 vals+="90,94.86775632 "
+
+vals=""
+vals+="25,92.39278308000002 "
+vals+="35,92.75729504200001 "
+vals+="45,94.03803239999998 "
+
 
 function test_discretize()
 {

@@ -30,7 +30,7 @@ function learn()
 
   data_out_path=/dev/shm
 
-  echo $pos $neighbors $model_out_path $train_len
+  #echo $pos $neighbors $model_out_path $train_len
 
   # export data
   python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file /dev/shm/tag_training.pickle --target_file /dev/shm/target_training.pickle
