@@ -1,4 +1,4 @@
-MODEL_FILE="../../ml/model/hr/neighbors=45_scale=16384_final"
+MODEL_FILE="../../ml/model/neighbors=45_scale=16384_final"
 
 CHALLENGE_FILE="../../data/tag_testing.txt"
 TARGET_HEADERS="../../data/target_testing.txt"

@@ -1,9 +1,3 @@
-# CONF=Makefile-10k_a.inc
-# CONF=Makefile-10k_b.inc
-# CONF=Makefile-10k_c.inc
-# CONF=Makefile-1k_a.inc
-# CONF=Makefile-1k_b.inc
-# CONF=Makefile-1k_c.inc
 CONF=Makefile-final.inc
 include ${CONF}
 

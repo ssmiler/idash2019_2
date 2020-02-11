@@ -274,12 +274,12 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
     int64_t numPositionsRead = 0;
     for (std::getline(challenge, line); challenge; std::getline(challenge, line)) {
         std::istringstream iss(line);
-        int blah = 0; // must be 1 in the file
+        int blah = 0; // must be 22 in the file
         uint64_t position;
         uint64_t position2;
         std::string featureName;
         iss >> blah;
-        REQUIRE_DRAMATICALLY(blah == 1, "file format error");
+        REQUIRE_DRAMATICALLY(blah == 22, "file format error");
         iss >> position;
         iss >> position2;
         iss >> featureName;
@@ -315,12 +315,12 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     idashParams->NUM_OUTPUT_FEATURES = 0;
     for (std::getline(target, line); target; std::getline(target, line)) {
         std::istringstream iss(line);
-        int blah = 0; // must be 1 in the file
+        int blah = 0; // must be 22 in the file
         uint64_t position;
         uint64_t position2; //must be position+1
         std::string position_name; //must be position+1
         iss >> blah;
-        REQUIRE_DRAMATICALLY(blah == 1, "file format error");
+        REQUIRE_DRAMATICALLY(blah == 22, "file format error");
         iss >> position >> position2 >> position_name;
         REQUIRE_DRAMATICALLY(position2 == position + 1, "file format error");
         REQUIRE_DRAMATICALLY(iss, "file format error");
@@ -340,10 +340,10 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     idashParams->NUM_INPUT_FEATURES = 0;
     for (std::getline(challenge, line); challenge; std::getline(challenge, line)) {
         std::istringstream iss(line);
-        int blah = 0; // must be 1 in the file
+        int blah = 0; // must be 22 in the file
         uint64_t position;
         iss >> blah;
-        REQUIRE_DRAMATICALLY(blah == 1, "file format error");
+        REQUIRE_DRAMATICALLY(blah == 22, "file format error");
         iss >> position;
         REQUIRE_DRAMATICALLY(iss, "file format error");
         idashParams->registerInBigIdx(position, 0, idashParams->NUM_INPUT_FEATURES++);
@@ -552,29 +552,6 @@ void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, co
 
     out.close();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key) {
     const IdashParams &params = *key.idashParams;

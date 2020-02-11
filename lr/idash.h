@@ -76,11 +76,11 @@ struct IdashParams {
     std::unordered_map<uint64_t, std::array<FeatBigIndex, 3>> out_features_index;
     std::vector<std::pair<uint64_t, std::string> > out_position_names; //in the order of the csv
 
-    inline FeatIndex feature_indexOf(uint32_t big_index) const { return big_index >> 1u; }
+    inline FeatIndex feature_indexOf(uint32_t big_index) const { return big_index; }
 
-    inline FeatRegion feature_regionOf(uint32_t big_index) const { return big_index & 1u; }
+    inline FeatRegion feature_regionOf(uint32_t big_index) const { return 0; }
 
-    inline FeatBigIndex feature_bigIndexOf(uint32_t index, uint32_t region) const { return (index << 1u) | region; }
+    inline FeatBigIndex feature_bigIndexOf(uint32_t index, uint32_t region) const { return index; }
 
     inline FeatBigIndex constant_bigIndex() const { return -1; }
 
