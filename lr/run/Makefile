@@ -1,9 +1,10 @@
-CONF=Makefile-10k_a.inc
+# CONF=Makefile-10k_a.inc
 # CONF=Makefile-10k_b.inc
 # CONF=Makefile-10k_c.inc
-#CONF=Makefile-1k_a.inc
-#CONF=Makefile-1k_b.inc
-#CONF=Makefile-1k_c.inc
+# CONF=Makefile-1k_a.inc
+# CONF=Makefile-1k_b.inc
+# CONF=Makefile-1k_c.inc
+CONF=Makefile-final.inc
 include ${CONF}
 
 # LINUX vs. OSX specifics
@@ -16,7 +17,7 @@ ifeq (${UNAME}, Darwin)
 CMAKE_OPTIONS=-DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DENABLE_SPQLIOS_FMA=on -DENABLE_SPQLIOS_AVX=off -DENABLE_NAYUKI_PORTABLE=on -DENABLE_NAYUKI_AVX=off
 endif
 
-all: bin/keygen ../../ml/model/10k_a params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc.png
+all: bin/keygen ../../ml/model/final params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv auc.png
 
 clean:
 	rm -rf params.bin keys.bin encrypted_data.bin encrypted_prediction.bin result.csv result_bypos.csv auc.png target.csv ypred.csv || true
@@ -35,7 +36,7 @@ bin/keygen:
 uncompress:
 	../../ml/model/uncompress-models.sh
 
-../../ml/model/10k_a:
+../../ml/model/final:
 	make uncompress
 
 keys.bin:

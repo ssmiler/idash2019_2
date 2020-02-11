@@ -13,11 +13,11 @@
 
 #define DIE_DRAMATICALLY(message) { std::cout << "ERROR: " << message << std::endl; abort(); }
 
-#define CHALLENGE_FILE "../../data/sorted_tag_SNPs_1k_genotypes_test.txt"
-//#define CHALLENGE_FILE "../../data/sorted_tag_SNPs_10k_genotypes_test.txt"
-#define TARGET_FILE "../../data/sorted_target_SNP_genotypes.txt"
-#define MODEL_FILE "../../ml/model/1k"
-//#define MODEL_FILE "../../ml/model/hr/1k"
+#define CHALLENGE_FILE "../../data/tag_testing.txt"
+//#define CHALLENGE_FILE "../../data/tag_testing.txt"
+#define TARGET_FILE "../../data/target_testing.txt"
+#define MODEL_FILE "../../ml/model/final"
+//#define MODEL_FILE "../../ml/model/hr/final"
 
 
 #define PARAMS_FILE "params.bin"
@@ -36,7 +36,7 @@ typedef uint32_t FeatRegion;
 
 
 struct IdashParams {
-    static const uint32_t NUM_REGIONS = 2;
+    static const uint32_t NUM_REGIONS = 1;
     static const uint32_t NUM_SNP_PER_POSITIONS = 3;
 
     //TRLWE parameters
