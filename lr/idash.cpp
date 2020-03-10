@@ -680,11 +680,12 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
     const int64_t REGION_SIZE = params.REGION_SIZE;
     constexpr int64_t NB_THREADS = 4;
 
+    vector<pair<FeatBigIndex, unordered_map<FeatBigIndex, int32_t>>> model_vec(model.model.begin(), model.model.end());
+
     // create output tlwe beforehand
-    for (const auto& it: model.model) {
+    for (const auto& it: model_vec) {
         enc_preds.createAndGet(it.first, tlweParams);
     }
-
 
     #pragma omp parallel num_threads(NB_THREADS)
     {
@@ -697,59 +698,57 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
 
         // for each output feature
         #pragma omp for
-        for(size_t b = 0; b < model.model.bucket_count(); b++) {
-            for (auto it = model.model.begin(b); it != model.model.end(b); it++) {
-                FeatBigIndex outBidx = it->first;
-                const std::unordered_map<FeatBigIndex, int32_t> &mcoeffs = it->second;
+        for (unsigned i = 0; i < model_vec.size(); ++i) {
+            FeatBigIndex outBidx = model_vec[i].first;
+            const std::unordered_map<FeatBigIndex, int32_t> &mcoeffs = model_vec[i].second;
 
-                //clear tmp
-                for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
-                    tLweClear(tmp + region, tlweParams);
-                }
+            //clear tmp
+            for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
+                tLweClear(tmp + region, tlweParams);
+            }
 
-                //for each input feature, add it to the corresponding region
-                for (const auto &it2: mcoeffs) {
+            //for each input feature, add it to the corresponding region
+            for (const auto &it2: mcoeffs) {
 
-                    FeatBigIndex inBidx = it2.first;
-                    int32_t coeff = it2.second;
+                FeatBigIndex inBidx = it2.first;
+                int32_t coeff = it2.second;
 
-                    if (inBidx == params.constant_bigIndex()) {
-                        //add the constant to all the samples (implicitly) in region 0
-                        Torus32 scaled_constant = coeff * params.ONE_IN_T32;
-                        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-                            tmp->b->coefsT[sampleId] += scaled_constant;
-                        }
-                    } else {
-                        //add the TLWE to the corresponding region
-                        FeatRegion region = params.feature_regionOf(inBidx);
-                        const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
-
-                        // Multiply the scaled coefficient to the input and add it to the temporary region
-                        tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
+                if (inBidx == params.constant_bigIndex()) {
+                    //add the constant to all the samples (implicitly) in region 0
+                    Torus32 scaled_constant = coeff * params.ONE_IN_T32;
+                    for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                        tmp->b->coefsT[sampleId] += scaled_constant;
                     }
+                } else {
+                    //add the TLWE to the corresponding region
+                    FeatRegion region = params.feature_regionOf(inBidx);
+                    const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
+
+                    // Multiply the scaled coefficient to the input and add it to the temporary region
+                    tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
                 }
+            }
 
-                // add all regions (rotated) to the output tlw
-                TLweSample *outTLWE = enc_preds.get(outBidx, tlweParams);
+            // add all regions (rotated) to the output tlw
+            TLweSample *outTLWE = enc_preds.get(outBidx, tlweParams);
 
-                // Init with tmp region 0
-                tLweCopy(outTLWE, tmp, tlweParams);
-                for (uint64_t region = 1; region < params.NUM_REGIONS; ++region) {
+            // Init with tmp region 0
+            tLweCopy(outTLWE, tmp, tlweParams);
+            for (uint64_t region = 1; region < params.NUM_REGIONS; ++region) {
 
-                    // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
-                    // rotate the tmp regions
-                    int32_t rotation_amount = 2 * N - region * REGION_SIZE;
-                    for (int32_t i = 0; i <= k; i++) {
-                        torusPolynomialMulByXai(&tmp_rot->a[i], rotation_amount, &(&tmp[region])->a[i]);
-                    }
-                    // add the rotation to outTLWE
-                    tLweAddTo(outTLWE, tmp_rot, tlweParams);
+                // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
+                // rotate the tmp regions
+                int32_t rotation_amount = 2 * N - region * REGION_SIZE;
+                for (int32_t i = 0; i <= k; i++) {
+                    torusPolynomialMulByXai(&tmp_rot->a[i], rotation_amount, &(&tmp[region])->a[i]);
                 }
+                // add the rotation to outTLWE
+                tLweAddTo(outTLWE, tmp_rot, tlweParams);
+            }
 
-                //destroy the positions that must remain hidden
-                for (uint64_t j = params.REGION_SIZE; j < N; ++j) {
-                    outTLWE->b->coefsT[j] = 0;
-                }
+            //destroy the positions that must remain hidden
+            for (uint64_t j = params.REGION_SIZE; j < N; ++j) {
+                outTLWE->b->coefsT[j] = 0;
             }
         }
 
