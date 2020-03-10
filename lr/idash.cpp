@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <omp.h>
+
 using namespace std;
 
 
@@ -676,75 +678,85 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
     REQUIRE_DRAMATICALLY(k == 1, "blah");
     const uint32_t N = params.N;
     const int64_t REGION_SIZE = params.REGION_SIZE;
+    constexpr int64_t NB_THREADS = 4;
 
-
-    // We use two temporary ciphertexts, one for region 0 and one for region 1
-    // Only at the end of the loop we rotate region 1 and add it to region 0
-    TLweSample *tmp = new_TLweSample_array(params.NUM_REGIONS, tlweParams);
-
-    // create a temporary value to register the rotations
-    TLweSample *tmp_rot = new_TLweSample(tlweParams);
-
-
-    // for each output feature
-    for (const auto &it : model.model) {
-
-        FeatBigIndex outBidx = it.first;
-        const std::unordered_map<FeatBigIndex, int32_t> &mcoeffs = it.second;
-
-        //clear tmp
-        for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
-            tLweClear(tmp + region, tlweParams);
-        }
-
-        //for each input feature, add it to the corresponding region
-        for (const auto &it2: mcoeffs) {
-
-            FeatBigIndex inBidx = it2.first;
-            int32_t coeff = it2.second;
-
-            if (inBidx == params.constant_bigIndex()) {
-                //add the constant to all the samples (implicitly) in region 0
-                Torus32 scaled_constant = coeff * params.ONE_IN_T32;
-                for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-                    tmp->b->coefsT[sampleId] += scaled_constant;
-                }
-            } else {
-                //add the TLWE to the corresponding region
-                FeatRegion region = params.feature_regionOf(inBidx);
-                const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
-
-                // Multiply the scaled coefficient to the input and add it to the temporary region
-                tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
-            }
-        }
-
-        // add all regions (rotated) to the output tlw
-        TLweSample *outTLWE = enc_preds.createAndGet(outBidx, tlweParams);
-
-        // Init with tmp region 0
-        tLweCopy(outTLWE, tmp, tlweParams);
-        for (uint64_t region = 1; region < params.NUM_REGIONS; ++region) {
-
-            // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
-            // rotate the tmp regions
-            int32_t rotation_amount = 2 * N - region * REGION_SIZE;
-            for (int32_t i = 0; i <= k; i++) {
-                torusPolynomialMulByXai(&tmp_rot->a[i], rotation_amount, &(&tmp[region])->a[i]);
-            }
-            // add the rotation to outTLWE
-            tLweAddTo(outTLWE, tmp_rot, tlweParams);
-        }
-
-        //destroy the positions that must remain hidden
-        for (uint64_t j = params.REGION_SIZE; j < N; ++j) {
-            outTLWE->b->coefsT[j] = 0;
-        }
+    // create output tlwe beforehand
+    for (const auto& it: model.model) {
+        enc_preds.createAndGet(it.first, tlweParams);
     }
 
-    // DELETE
-    delete_TLweSample(tmp_rot);
-    delete_TLweSample_array(params.NUM_REGIONS, tmp);
+
+    #pragma omp parallel num_threads(NB_THREADS)
+    {
+        // We use two temporary ciphertexts, one for region 0 and one for region 1
+        // Only at the end of the loop we rotate region 1 and add it to region 0
+        TLweSample *tmp = new_TLweSample_array(params.NUM_REGIONS, tlweParams);
+
+        // create a temporary value to register the rotations
+        TLweSample *tmp_rot = new_TLweSample(tlweParams);
+
+        // for each output feature
+        #pragma omp for
+        for(size_t b = 0; b < model.model.bucket_count(); b++) {
+            for (auto it = model.model.begin(b); it != model.model.end(b); it++) {
+                FeatBigIndex outBidx = it->first;
+                const std::unordered_map<FeatBigIndex, int32_t> &mcoeffs = it->second;
+
+                //clear tmp
+                for (uint64_t region = 0; region < params.NUM_REGIONS; ++region) {
+                    tLweClear(tmp + region, tlweParams);
+                }
+
+                //for each input feature, add it to the corresponding region
+                for (const auto &it2: mcoeffs) {
+
+                    FeatBigIndex inBidx = it2.first;
+                    int32_t coeff = it2.second;
+
+                    if (inBidx == params.constant_bigIndex()) {
+                        //add the constant to all the samples (implicitly) in region 0
+                        Torus32 scaled_constant = coeff * params.ONE_IN_T32;
+                        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+                            tmp->b->coefsT[sampleId] += scaled_constant;
+                        }
+                    } else {
+                        //add the TLWE to the corresponding region
+                        FeatRegion region = params.feature_regionOf(inBidx);
+                        const TLweSample *inTLWE = enc_data.getTLWE(inBidx, params);
+
+                        // Multiply the scaled coefficient to the input and add it to the temporary region
+                        tLweAddMulTo(tmp + region, coeff, inTLWE, tlweParams);
+                    }
+                }
+
+                // add all regions (rotated) to the output tlw
+                TLweSample *outTLWE = enc_preds.get(outBidx, tlweParams);
+
+                // Init with tmp region 0
+                tLweCopy(outTLWE, tmp, tlweParams);
+                for (uint64_t region = 1; region < params.NUM_REGIONS; ++region) {
+
+                    // in TFHE only tLweMulByXaiMinusOne is created, not tLweMulByXai
+                    // rotate the tmp regions
+                    int32_t rotation_amount = 2 * N - region * REGION_SIZE;
+                    for (int32_t i = 0; i <= k; i++) {
+                        torusPolynomialMulByXai(&tmp_rot->a[i], rotation_amount, &(&tmp[region])->a[i]);
+                    }
+                    // add the rotation to outTLWE
+                    tLweAddTo(outTLWE, tmp_rot, tlweParams);
+                }
+
+                //destroy the positions that must remain hidden
+                for (uint64_t j = params.REGION_SIZE; j < N; ++j) {
+                    outTLWE->b->coefsT[j] = 0;
+                }
+            }
+        }
+
+        // DELETE
+        delete_TLweSample(tmp_rot);
+        delete_TLweSample_array(params.NUM_REGIONS, tmp);
+    }
 }
 
 PlaintextOnehot compute_plaintext_onehot(const PlaintextData &X, const IdashParams &params) {

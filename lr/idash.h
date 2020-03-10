@@ -173,6 +173,10 @@ struct EncryptedPredictions {
         DIE_DRAMATICALLY("shit happens again"); //there should not already be a value in this map
         return it->second;
     }
+
+    TLweSample *get(FeatBigIndex bidx, const TLweParams *tLweParams) {
+        return score.at(bidx);
+    }
 };
 
 struct DecryptedPredictions {
