@@ -33,6 +33,9 @@
 #define RESULT_FILE "result.csv"
 #define RESULT_BYPOS_FILE "result_bypos.csv"
 
+#ifndef NB_THREADS
+    #define NB_THREADS 4
+#endif
 
 typedef uint32_t FeatBigIndex;
 typedef uint32_t FeatIndex;

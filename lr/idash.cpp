@@ -412,22 +412,34 @@ void write_decrypted_predictions(const DecryptedPredictions &predictions, const 
                                  const std::string &filename, const bool PRINT_POS_NAME) {
     ofstream out(filename);
     out << "Subject ID,target SNP,0,1,2" << endl;
-    for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
-        for (const auto &it : params.out_position_names) {
-            const uint64_t &position = it.first;
-            const std::string &position_name = it.second;
-            const std::array<std::vector<float>, 3> &position_preds = predictions.score.at(position);
-            out << sampleId << ",";
-            if (PRINT_POS_NAME) {
+
+    if (PRINT_POS_NAME) {
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            for (const auto &it : params.out_position_names) {
+                const uint64_t &position = it.first;
+                const std::string &position_name = it.second;
+                const std::array<std::vector<float>, 3> &position_preds = predictions.score.at(position);
+                out << sampleId << ",";
                 out << position_name << ",";
-            } else {
-                out << position << ",";
+                out << position_preds[0][sampleId] << ",";
+                out << position_preds[1][sampleId] << ",";
+                out << position_preds[2][sampleId] << endl;
             }
-            out << position_preds[0][sampleId] << ",";
-            out << position_preds[1][sampleId] << ",";
-            out << position_preds[2][sampleId] << endl;
+        }
+    } else {
+        for (uint64_t sampleId = 0; sampleId < params.NUM_SAMPLES; ++sampleId) {
+            for (const auto &it : params.out_position_names) {
+                const uint64_t &position = it.first;
+                const std::array<std::vector<float>, 3> &position_preds = predictions.score.at(position);
+                out << sampleId << ",";
+                out << position << ",";
+                out << position_preds[0][sampleId] << ",";
+                out << position_preds[1][sampleId] << ",";
+                out << position_preds[2][sampleId] << endl;
+            }
         }
     }
+
     out.close();
 }
 
@@ -583,7 +595,7 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
     //pre-encrypt a pool of ciphertexts of zero
     const uint64_t NUM_CIPHERTEXTS = (params.NUM_INPUT_FEATURES+params.NUM_REGIONS-1)/params.NUM_REGIONS;
     TLweSample* pool = new_TLweSample_array(NUM_CIPHERTEXTS, params.tlweParams);
-#pragma omp parallel for
+    #pragma omp parallel for num_threads(NB_THREADS)
     for (uint64_t i=0; i<NUM_CIPHERTEXTS; ++i) {
         tLweSymEncryptZero(pool+i, params.alpha, key.tlweKey);
     }
@@ -698,7 +710,6 @@ void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &e
     REQUIRE_DRAMATICALLY(k == 1, "blah");
     const uint32_t N = params.N;
     const int64_t REGION_SIZE = params.REGION_SIZE;
-    constexpr int64_t NB_THREADS = 4;
 
     vector<pair<FeatBigIndex, unordered_map<FeatBigIndex, int32_t>>> model_vec(model.model.begin(), model.model.end());
 

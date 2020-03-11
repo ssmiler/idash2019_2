@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
     write_key(*key, KEYS_FILE);
 
     std::cout << "----------------- BENCHMARK ----------------- " << std::endl;
+    std::cout << "Number of threads ...............: " <<  NB_THREADS << std::endl;
     std::cout << "Total wall time (seconds)........: " <<  profiler.walltime() << std::endl;
     std::cout << "RAM usage (MB)...................: " <<  profiler.maxrss()  / 1e6 << std::endl;
 }
