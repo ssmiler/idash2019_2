@@ -15,7 +15,8 @@ echo $neighbors $train_len $model_suffix
 model_out_path=model/vw/neighbors=$neighbors$model_suffix
 mkdir -p $model_out_path
 
-target_snp=`cat data/target_snp`
+target_snp=`cat ../data/target_geno_model_coordinates.txt`
+# target_snp=`cat data/target_snp`
 # target_snp=`head -n 20 data/target_snp`
 # target_snp="16051248"
 
