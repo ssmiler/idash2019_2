@@ -303,7 +303,7 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
 }
 
 
-IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile) {
+IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile, const bool targetFilePosOnly) {
 
     IdashParams *idashParams = new IdashParams();
     TLweKey *tlweKey;
@@ -315,23 +315,43 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     std::ifstream target(targetFile);
     idashParams->NUM_OUTPUT_POSITIONS = 0;
     idashParams->NUM_OUTPUT_FEATURES = 0;
-    for (std::getline(target, line); target; std::getline(target, line)) {
-        std::istringstream iss(line);
-        int blah = 0; // must be 22 in the file
-        uint64_t position;
-        uint64_t position2; //must be position+1
-        std::string position_name; //must be position+1
-        iss >> blah;
-        REQUIRE_DRAMATICALLY(blah == 22, "file format error");
-        iss >> position >> position2 >> position_name;
-        REQUIRE_DRAMATICALLY(position2 == position + 1, "file format error");
-        REQUIRE_DRAMATICALLY(iss, "file format error");
-        idashParams->registerOutBigIdx(position, 0, idashParams->NUM_OUTPUT_FEATURES++);
-        idashParams->registerOutBigIdx(position, 1, idashParams->NUM_OUTPUT_FEATURES++);
-        idashParams->registerOutBigIdx(position, 2, idashParams->NUM_OUTPUT_FEATURES++);
-        idashParams->NUM_OUTPUT_POSITIONS++;
-        idashParams->registerOutPositionName(position, position_name);
+
+    if (targetFilePosOnly) {
+        for (std::getline(target, line); target; std::getline(target, line)) {
+            std::istringstream iss(line);
+            uint64_t position;
+            std::string position_name; //must be position+1
+
+            iss >> position;
+            position_name = to_string(position);
+            REQUIRE_DRAMATICALLY(iss, "file format error");
+
+            idashParams->registerOutBigIdx(position, 0, idashParams->NUM_OUTPUT_FEATURES++);
+            idashParams->registerOutBigIdx(position, 1, idashParams->NUM_OUTPUT_FEATURES++);
+            idashParams->registerOutBigIdx(position, 2, idashParams->NUM_OUTPUT_FEATURES++);
+            idashParams->NUM_OUTPUT_POSITIONS++;
+            idashParams->registerOutPositionName(position, position_name);
+        }
+    } else {
+        for (std::getline(target, line); target; std::getline(target, line)) {
+            std::istringstream iss(line);
+            int blah = 0; // must be 22 in the file
+            uint64_t position;
+            uint64_t position2; //must be position+1
+            std::string position_name; //must be position+1
+            iss >> blah;
+            REQUIRE_DRAMATICALLY(blah == 22, "file format error");
+            iss >> position >> position2 >> position_name;
+            REQUIRE_DRAMATICALLY(position2 == position + 1, "file format error");
+            REQUIRE_DRAMATICALLY(iss, "file format error");
+            idashParams->registerOutBigIdx(position, 0, idashParams->NUM_OUTPUT_FEATURES++);
+            idashParams->registerOutBigIdx(position, 1, idashParams->NUM_OUTPUT_FEATURES++);
+            idashParams->registerOutBigIdx(position, 2, idashParams->NUM_OUTPUT_FEATURES++);
+            idashParams->NUM_OUTPUT_POSITIONS++;
+            idashParams->registerOutPositionName(position, position_name);
+        }
     }
+
     target.close();
 
     //read all output positions from the challengeFile

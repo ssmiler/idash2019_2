@@ -14,10 +14,14 @@
 #define DIE_DRAMATICALLY(message) { std::cout << "ERROR: " << message << std::endl; abort(); }
 
 #define CHALLENGE_FILE "../../data/tag_testing.txt"
-//#define CHALLENGE_FILE "../../data/tag_testing.txt"
-#define TARGET_FILE "../../data/target_testing.txt"
 #define MODEL_FILE "../../ml/model/final"
-//#define MODEL_FILE "../../ml/model/hr/final"
+#define TARGET_FILE_POS_ONLY true
+// #define TARGET_FILE_POS_ONLY false
+#if TARGET_FILE_POS_ONLY == true
+    #define TARGET_FILE "../../data/target_geno_model_coordinates.txt"
+#else
+    #define TARGET_FILE "../../data/target_testing.txt"
+#endif
 
 
 #define PARAMS_FILE "params.bin"
@@ -251,7 +255,7 @@ PlaintextOnehot compute_plaintext_onehot(const PlaintextData &X, const IdashPara
 void
 compute_score(DecryptedPredictions &predictions, const PlaintextData &X, const Model &M, const IdashParams &params);
 
-IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile);
+IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile, const bool targetFilePosOnly);
 
 
 /** @brief Class for timing a scope. Starting upon construction. */

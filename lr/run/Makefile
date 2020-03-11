@@ -35,7 +35,7 @@ uncompress:
 
 keys.bin:
 	@echo ===============================================================
-	./bin/keygen ${TARGET_HEADERS} ${CHALLENGE_FILE}
+	./bin/keygen ${TARGET_HEADERS} ${CHALLENGE_FILE} ${TARGET_HEADERS_POS_ONLY}
 	@echo ===============================================================
 
 params.bin: keys.bin

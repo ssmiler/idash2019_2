@@ -6,7 +6,7 @@ int main2() {
     PlaintextData data;
     EncryptedData encryptedData;
 
-    IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE);
+    IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE, TARGET_FILE_POS_ONLY);
     const IdashParams &params = *key->idashParams;
     read_plaintext_data(data, params, CHALLENGE_FILE);
 
@@ -48,7 +48,7 @@ int main() {
     DecryptedPredictions resultPredications;
     EncryptedPredictions encPredications;
 
-    IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE);
+    IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE, TARGET_FILE_POS_ONLY);
     const IdashParams &params = *key->idashParams;
     read_model(model, params, "../../ml/model/hr/10k");
     read_plaintext_data(data, params, CHALLENGE_FILE);

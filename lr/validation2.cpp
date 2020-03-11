@@ -10,7 +10,7 @@ int main() {
     EncryptedPredictions encPredictions;
 
 
-    IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE);
+    IdashKey *key = keygen(TARGET_FILE, CHALLENGE_FILE, TARGET_FILE_POS_ONLY);
     write_key(*key, "file_key");
 
     IdashKey key_read;
