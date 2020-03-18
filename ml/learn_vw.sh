@@ -1,18 +1,12 @@
 jobs=16
 
 neighbors=$1
+train_len=$2
+data_suffix=$3
 
-train_len=1200
+echo $neighbors $train_len $data_suffix
 
-if [ -n "$2" ]
-then
-  train_len=$2
-  model_suffix=_final
-fi
-
-echo $neighbors $train_len $model_suffix
-
-model_out_path=model/vw/neighbors=$neighbors$model_suffix
+model_out_path=model/vw/neighbors=$neighbors$data_suffix
 mkdir -p $model_out_path
 
 target_snp=`cat ../data/target_geno_model_coordinates.txt`
@@ -20,7 +14,7 @@ target_snp=`cat ../data/target_geno_model_coordinates.txt`
 # target_snp=`head -n 20 data/target_snp`
 # target_snp="16051248"
 
-cp data/ta*_training.pickle /dev/shm
+cp data/ta*_training$data_suffix.pickle /dev/shm
 
 function learn()
 {
@@ -28,13 +22,14 @@ function learn()
   neighbors=$2
   train_len=$3
   model_out_path=$4
+  data_suffix=$5
 
   data_out_path=/dev/shm
 
   #echo $pos $neighbors $model_out_path $train_len
 
   # export data
-  python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file /dev/shm/tag_training.pickle --target_file /dev/shm/target_training.pickle
+  python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file /dev/shm/tag_training$data_suffix.pickle --target_file /dev/shm/target_training$data_suffix.pickle
   rm $data_out_path/$pos.y
 
   file_X=$data_out_path/$pos.X
@@ -88,7 +83,7 @@ function learn()
 }
 export -f learn
 
-parallel -j $jobs learn {} $neighbors $train_len $model_out_path ::: $target_snp
+parallel -j $jobs learn {} $neighbors $train_len $model_out_path $data_suffix ::: $target_snp
 
 rm /dev/shm/*.pickle
 
