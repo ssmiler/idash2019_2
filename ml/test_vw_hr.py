@@ -94,8 +94,6 @@ for k,model in enumerate(models):
       models_coefs = dict()
       print("{:.2f}%".format((k+1)/len(models)*100), end='\r')
 
-print("A", end='\r')
-
 target_cache = args.target_file + '.cache'
 if os.path.exists(target_cache):
   y = pd.read_pickle(target_cache)
@@ -108,19 +106,21 @@ else:
   columns = list(map(lambda e: "_".join(map(str,e)), it.product(df_target.columns, [0,1,2])))
   y = pd.DataFrame(data=data, columns=columns, index=df_target.index)
 
-  print(y.head())
+  print(y.shape)
 
   y.to_pickle(target_cache)
 
-print("B", end='\r')
-
 df_test = y.loc[:,df_pred.columns]
-print("C", end='\r')
 
 score1=sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:], df_pred.iloc[args.ignore_first:], average='micro')
 score2=sklearn.metrics.roc_auc_score(df_test, df_pred, average='micro')
 
 #score2=0.0
 print("Micro-AUC score: {:.8} ({:.8} {}) pred max-min {}".format(score1, score2, args.models, df_pred.max().max() - df_pred.min().min()))
+
+score_20=sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:, :20000*3], df_pred.iloc[args.ignore_first:, :20000*3], average='micro')
+score_40=sklearn.metrics.roc_auc_score(df_test.iloc[args.ignore_first:, :40000*3], df_pred.iloc[args.ignore_first:, :40000*3], average='micro')
+
+print("\t20k - {:.8}, 40k - {:.8}".format(score_20, score_40))
 
 
