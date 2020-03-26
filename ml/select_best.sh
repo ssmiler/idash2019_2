@@ -1,5 +1,5 @@
 suffix=full
-neighbours="5 10 15 20 25 30 35 40 45 50"
+neighbours="1 3 5 10 15 20 25 30 35 40 45 50"
 
 for data_suffix in "" "_AFR" "_AMR" "_EUR" 
 do      	
@@ -19,6 +19,8 @@ exit
 # all populations
 # python3 -c 'print("\n".join(map(lambda ls: "vals+=\",{},{} \"".format(ls[4][19:-11], ls[-1]), map(lambda l: l.strip().split(), filter(lambda l: l.startswith("Micro"), open("results.log").readlines())))))'
 vals=""
+vals+=",1,29.750733 "
+vals+=",3,74.25841399999999 "
 vals+=",5,93.519295 "
 vals+=",10,90.310766 "
 vals+=",15,90.06903619999999 "
@@ -35,6 +37,8 @@ vals+=",50,90.16025050000002 "
 # python3 -c 'print("\n".join(map(lambda ls: "vals+=\"{},{},{} \"".format(ls[4][-15:-11], ls[4][19:-15], ls[-1]), map(lambda l: l.strip().split(), filter(lambda l: l.startswith("Micro"), open("results_AMR.log").readlines())))))'
 # python3 -c 'print("\n".join(map(lambda ls: "vals+=\"{},{},{} \"".format(ls[4][-15:-11], ls[4][19:-15], ls[-1]), map(lambda l: l.strip().split(), filter(lambda l: l.startswith("Micro"), open("results_EUR.log").readlines())))))'
 vals=""
+vals+="_AFR,1,24.00809 "
+vals+="_AFR,3,60.525710000000004 "
 vals+="_AFR,5,65.60234525000001 "
 vals+="_AFR,10,78.1859599 "
 vals+="_AFR,15,83.28176679999999 "
@@ -45,6 +49,10 @@ vals+="_AFR,35,82.44309315000001 "
 vals+="_AFR,40,81.86045391999998 "
 vals+="_AFR,45,81.10257222999999 "
 vals+="_AFR,50,84.10892107000001 "
+
+
+vals+="_AMR,1,22.019460000000002 "
+vals+="_AMR,3,60.79398499999999 "
 vals+="_AMR,5,63.86789399999999 "
 vals+="_AMR,10,66.08587849999999 "
 vals+="_AMR,15,69.08228 "
@@ -55,6 +63,9 @@ vals+="_AMR,35,68.750364523 "
 vals+="_AMR,40,70.12886960999998 "
 vals+="_AMR,45,72.63518404 "
 vals+="_AMR,50,73.04694349 "
+
+vals+="_EUR,1,23.18704 "
+vals+="_EUR,3,59.635959 "
 vals+="_EUR,5,66.530757 "
 vals+="_EUR,10,69.49674 "
 vals+="_EUR,15,75.4526682 "
