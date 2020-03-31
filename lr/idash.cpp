@@ -298,6 +298,7 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
             }
         }
         numPositionsRead++;
+        if (numPositionsRead >= idashParams.NUM_INPUT_POSITIONS) break;
     }
     REQUIRE_DRAMATICALLY(numPositionsRead == idashParams.NUM_INPUT_POSITIONS, "missing positions in plaintext file");
 }
@@ -316,10 +317,11 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     idashParams->NUM_OUTPUT_POSITIONS = 0;
     idashParams->NUM_OUTPUT_FEATURES = 0;
 
+    uint64_t tagPosLast; // last read tag position
     if (targetFilePosOnly) {
+        uint64_t position;
         for (std::getline(target, line); target; std::getline(target, line)) {
             std::istringstream iss(line);
-            uint64_t position;
             std::string position_name; //must be position+1
 
             iss >> position;
@@ -332,11 +334,12 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
             idashParams->NUM_OUTPUT_POSITIONS++;
             idashParams->registerOutPositionName(position, position_name);
         }
+        tagPosLast = position;
     } else {
+        uint64_t position;
         for (std::getline(target, line); target; std::getline(target, line)) {
             std::istringstream iss(line);
             int blah = 0; // must be 22 in the file
-            uint64_t position;
             uint64_t position2; //must be position+1
             std::string position_name; //must be position+1
             iss >> blah;
@@ -350,6 +353,7 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
             idashParams->NUM_OUTPUT_POSITIONS++;
             idashParams->registerOutPositionName(position, position_name);
         }
+        tagPosLast = position;
     }
 
     target.close();
@@ -360,6 +364,7 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     idashParams->NUM_SAMPLES = 0;
     idashParams->NUM_INPUT_POSITIONS = 0;
     idashParams->NUM_INPUT_FEATURES = 0;
+    uint64_t nbTargetsAfterLastTag = 0;
     for (std::getline(challenge, line); challenge; std::getline(challenge, line)) {
         std::istringstream iss(line);
         int blah = 0; // must be 22 in the file
@@ -368,6 +373,12 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
         REQUIRE_DRAMATICALLY(blah == 22, "file format error");
         iss >> position;
         REQUIRE_DRAMATICALLY(iss, "file format error");
+
+        if (position > tagPosLast) {
+            nbTargetsAfterLastTag++;
+            if (nbTargetsAfterLastTag > 50) break;
+        }
+
         idashParams->registerInBigIdx(position, 0, idashParams->NUM_INPUT_FEATURES++);
         idashParams->registerInBigIdx(position, 1, idashParams->NUM_INPUT_FEATURES++);
         idashParams->registerInBigIdx(position, 2, idashParams->NUM_INPUT_FEATURES++);
