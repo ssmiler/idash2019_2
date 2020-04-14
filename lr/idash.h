@@ -43,14 +43,12 @@ typedef uint32_t FeatRegion;
 
 
 struct IdashParams {
-    static const uint32_t NUM_REGIONS = 1;
     static const uint32_t NUM_SNP_PER_POSITIONS = 3;
 
     //TRLWE parameters
     static const uint32_t N = 1024;              // TRLWE dimension
     static const uint32_t k = 1;                 // k is always 1
     static const double alpha;   // minimal noise   //TODO check the correct value for alpha (security doc)
-    static const uint32_t REGION_SIZE = N / NUM_REGIONS;           // N / NUM_REGIONS must be >= NUM_SAMPLES
     static const TLweParams *tlweParams;
 
     // SCALING_FACTOR is chosen at encryption
@@ -77,17 +75,20 @@ struct IdashParams {
     uint32_t NUM_INPUT_FEATURES;    //number of input features (incl constant)
     uint32_t NUM_OUTPUT_FEATURES;   //number of output features
 
+    uint32_t NUM_REGIONS;
+    uint32_t REGION_SIZE;           // N / NUM_REGIONS must be >= NUM_SAMPLES
+
 
 
     std::unordered_map<uint64_t, std::array<FeatBigIndex, 3>> in_features_index;
     std::unordered_map<uint64_t, std::array<FeatBigIndex, 3>> out_features_index;
     std::vector<std::pair<uint64_t, std::string> > out_position_names; //in the order of the csv
 
-    inline FeatIndex feature_indexOf(uint32_t big_index) const { return big_index; }
+    inline FeatIndex feature_indexOf(uint32_t big_index) const { return big_index / NUM_REGIONS; }
 
-    inline FeatRegion feature_regionOf(uint32_t big_index) const { return 0; }
+    inline FeatRegion feature_regionOf(uint32_t big_index) const { return big_index % NUM_REGIONS; }
 
-    inline FeatBigIndex feature_bigIndexOf(uint32_t index, uint32_t region) const { return index; }
+    inline FeatBigIndex feature_bigIndexOf(uint32_t index, uint32_t region) const { return (index * NUM_REGIONS) + region; }
 
     inline FeatBigIndex constant_bigIndex() const { return -1; }
 

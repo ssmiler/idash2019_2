@@ -136,6 +136,10 @@ void write_params_ostream(const IdashParams &params, ostream &out) {
                          sizeof(params.NUM_INPUT_FEATURES));
     ostream_write_binary(out, &params.NUM_OUTPUT_FEATURES,
                          sizeof(params.NUM_OUTPUT_FEATURES));
+    ostream_write_binary(out, &params.NUM_REGIONS,
+                         sizeof(params.NUM_REGIONS));
+    ostream_write_binary(out, &params.REGION_SIZE,
+                         sizeof(params.REGION_SIZE));
 
     REQUIRE_DRAMATICALLY(params.NUM_INPUT_POSITIONS ==
                          params.in_features_index.size(),
@@ -204,6 +208,10 @@ void read_params_istream(IdashParams &params, istream &inp) {
                         sizeof(params.NUM_INPUT_FEATURES));
     istream_read_binary(inp, &params.NUM_OUTPUT_FEATURES,
                         sizeof(params.NUM_OUTPUT_FEATURES));
+    istream_read_binary(inp, &params.NUM_REGIONS,
+                         sizeof(params.NUM_REGIONS));
+    istream_read_binary(inp, &params.REGION_SIZE,
+                         sizeof(params.REGION_SIZE));
 
     for (uint32_t i = 0; i < params.NUM_INPUT_POSITIONS; ++i) {
         uint64_t pos;
@@ -404,6 +412,8 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     //TRLWE parameters
     idashParams->tlweParams = new_TLweParams(idashParams->N, idashParams->k, idashParams->alpha, 0.25);
 
+    idashParams->NUM_REGIONS = idashParams->N / idashParams->NUM_SAMPLES;
+    idashParams->REGION_SIZE = idashParams->N / idashParams->NUM_REGIONS;
 
     REQUIRE_DRAMATICALLY(idashParams->REGION_SIZE >= idashParams->NUM_SAMPLES, "REGION_SIZE must be >= NUM_SAMPLES ");
 
@@ -414,6 +424,8 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     cout << "target_file (headers): " << targetFile << endl;
     cout << "tag_file: " << challengeFile << endl;
     cout << "NUM_SAMPLES: " << idashParams->NUM_SAMPLES << endl;
+    cout << "NUM_REGIONS: " << idashParams->NUM_REGIONS << endl;
+    cout << "REGION_SIZE: " << idashParams->REGION_SIZE << endl;
     cout << "NUM_TARGET_POSITIONS: " << idashParams->NUM_OUTPUT_POSITIONS << endl;
     cout << "NUM_TAG_POSITIONS: " << idashParams->NUM_INPUT_POSITIONS << endl;
     return key;
