@@ -9,7 +9,8 @@ lines = open(filename).readlines()
 
 fields = dict(ram = [], tot_time = [], ser_time = [])
 for line in lines:
-    sline = line.strip().split()
+    line = line.strip()
+    sline = line.split()
     if line.startswith('NUM_SAMPLES:'):
         fields['nb_samples'] = sline[-1]
     elif line.startswith('NUM_TARGET_POSITIONS:'):
@@ -32,6 +33,11 @@ for line in lines:
         fields['cld_fhe'] = sline[-1]
     elif line.startswith('decrypt wall time (seconds)'):
         fields['dec_fhe'] = sline[-1]
+    elif line.endswith('encrypted_data.bin'):
+        fields['enc_inp_size'] = float(sline[-5])/1024/1024
+    elif line.endswith('encrypted_prediction.bin'):
+        fields['enc_out_size'] = float(sline[-5])/1024/1024
+
 
 assert(len(fields['ram']) == 4)
 assert(len(fields['ser_time']) == 3)
@@ -48,4 +54,5 @@ del fields['tot_time']
 
 
 #print('{},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_tot},{enc_ram},{cld_fhe},{cld_ser},{cld_tot},{cld_ram},{dec_fhe},{dec_ser},{dec_tot},{dec_ram}'.format(prefix, **fields))
-print('{},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_tot},{enc_ram},{cld_fhe},{cld_ser},{cld_tot},{cld_ram},{dec_fhe},,,{dec_ram}'.format(prefix, **fields))
+#print('{},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_tot},{enc_ram},{cld_fhe},{cld_ser},{cld_tot},{cld_ram},{dec_fhe},,,{dec_ram}'.format(prefix, **fields))
+print('{},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_ram},{cld_fhe},{cld_ser},{cld_ram},{dec_fhe},,{dec_ram},{enc_inp_size:.2f},{enc_out_size:.2f}'.format(prefix, **fields))

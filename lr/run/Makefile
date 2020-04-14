@@ -45,19 +45,19 @@ encrypted_data.bin: keys.bin
 	@echo ===============================================================
 	./bin/encrypt ${CHALLENGE_FILE}
 	@[ -f $@ ] # verify that the target is present
-	@ls -lh $@
+	@ls -l $@
 	@echo ===============================================================
 
 encrypted_prediction.bin: params.bin encrypted_data.bin
 	@echo ===============================================================
 	./bin/cloud ${MODEL_FILE}
 	@[ -f $@ ] # verify that the target is present
-	@ls -lh $@
+	@ls -l $@
 	@echo ===============================================================
 
 result.csv: keys.bin encrypted_prediction.bin
 	@echo ===============================================================
-	./bin/decrypt
+	./bin/decrypt N N
 	@[ -f $@ ] # verify that the target is present
 	@echo ===============================================================
 
