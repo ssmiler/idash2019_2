@@ -13,7 +13,7 @@ import numpy as np
 
 def read_and_transform(inp_file):
   df = pd.read_csv(inp_file, sep='\t', header=None).T # read input csv file and transpose
-  df.columns = df.loc[3,:].values                     # set SNP names as column index
+  df.columns = df.loc[1,:].values                     # set SNP names as column index
   df = df[4:].astype(np.int8).reset_index(drop=True)  # drop first 4 rows and transform SNP values to int8
   return df
 
