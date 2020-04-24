@@ -26,7 +26,8 @@ int main() {
 
     compute_score(targetPredictions, data, model, params_read);
 
-    encrypt_data(encryptedData, data, key_read);
+    encrypt_data_ph1(encryptedData, data, key_read);
+    encrypt_data_ph2(encryptedData, data, key_read);
 
     write_encrypted_data(encryptedData, params_read, "file_encrypt_data");
     EncryptedData encryptedData_read;

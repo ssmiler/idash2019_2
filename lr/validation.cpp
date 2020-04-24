@@ -11,7 +11,8 @@ int main2() {
     read_plaintext_data(data, params, CHALLENGE_FILE);
 
     PlaintextOnehot plaintextOnehot = compute_plaintext_onehot(data, params);
-    encrypt_data(encryptedData, data, *key);
+    encrypt_data_ph1(encryptedData, data, *key);
+    encrypt_data_ph2(encryptedData, data, *key);
 
     //try to decrypt the ciphertext and compare to the plaintextOneHot
     TorusPolynomial *message = new_TorusPolynomial(params.N);
@@ -55,7 +56,8 @@ int main() {
 
     compute_score(targetPredictions, data, model, params);
 
-    encrypt_data(encryptedData, data, *key);
+    encrypt_data_ph1(encryptedData, data, *key);
+    encrypt_data_ph2(encryptedData, data, *key);
     cloud_compute_score(encPredications, encryptedData, model, params);
     decrypt_predictions(resultPredications, encPredications, *key);
 

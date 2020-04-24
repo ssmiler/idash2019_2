@@ -245,7 +245,8 @@ void read_encrypted_predictions(EncryptedPredictions &encrypted_preds, const Ida
 void write_decrypted_predictions(const DecryptedPredictions &predictions, const IdashParams &params,
                                  const std::string &filename, const bool PRINT_POS_NAME = true);
 
-void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key);
+void encrypt_data_ph1(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key);
+void encrypt_data_ph2(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key);
 
 void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data, const Model &model,
                          const IdashParams &params);

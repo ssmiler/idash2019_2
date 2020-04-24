@@ -610,7 +610,7 @@ void write_encrypted_predictions(const EncryptedPredictions &encrypted_preds, co
     out.close();
 }
 
-void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key) {
+void encrypt_data_ph1(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key) {
     const IdashParams &params = *key.idashParams;
     const uint64_t NUM_SAMPLES = params.NUM_SAMPLES;
     REQUIRE_DRAMATICALLY(plain_data.data.size() == params.NUM_INPUT_POSITIONS, "Incomplete plaintext");
@@ -633,6 +633,13 @@ void encrypt_data(EncryptedData &enc_data, const PlaintextData &plain_data, cons
     }
     REQUIRE_DRAMATICALLY(nextSample<=pool+NUM_CIPHERTEXTS, "memory error");
     REQUIRE_DRAMATICALLY(nextSample>=pool+NUM_CIPHERTEXTS-10, "memory pb");
+}
+
+void encrypt_data_ph2(EncryptedData &enc_data, const PlaintextData &plain_data, const IdashKey &key) {
+    const IdashParams &params = *key.idashParams;
+    const uint64_t NUM_SAMPLES = params.NUM_SAMPLES;
+    REQUIRE_DRAMATICALLY(plain_data.data.size() == params.NUM_INPUT_POSITIONS, "Incomplete plaintext");
+
     //add the actual scores
     for (const auto &it: plain_data.data) {
         const uint64_t &pos = it.first;
