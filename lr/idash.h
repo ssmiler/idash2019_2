@@ -260,7 +260,8 @@ PlaintextOnehot compute_plaintext_onehot(const PlaintextData &X, const IdashPara
 void
 compute_score(DecryptedPredictions &predictions, const PlaintextData &X, const Model &M, const IdashParams &params);
 
-IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile, const bool targetFilePosOnly);
+IdashParams *keygen_ph1(const std::string &targetFile, const std::string &challengeFile, const bool targetFilePosOnly);
+IdashKey *keygen_ph2(IdashParams *idashParams);
 
 
 /** @brief Class for timing a scope. Starting upon construction. */

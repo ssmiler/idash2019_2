@@ -312,10 +312,8 @@ void read_plaintext_data(PlaintextData &plaintext_data, const IdashParams &idash
 }
 
 
-IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile, const bool targetFilePosOnly) {
-
+IdashParams *keygen_ph1(const std::string &targetFile, const std::string &challengeFile, const bool targetFilePosOnly) {
     IdashParams *idashParams = new IdashParams();
-    TLweKey *tlweKey;
 
     std::string line;
 
@@ -408,18 +406,10 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     idashParams->NUM_INPUT_FEATURES++; //for the constant value
     challenge.close();
 
-
-    //TRLWE parameters
-    idashParams->tlweParams = new_TLweParams(idashParams->N, idashParams->k, idashParams->alpha, 0.25);
-
     idashParams->NUM_REGIONS = idashParams->N / idashParams->NUM_SAMPLES;
     idashParams->REGION_SIZE = idashParams->N / idashParams->NUM_REGIONS;
 
     REQUIRE_DRAMATICALLY(idashParams->REGION_SIZE >= idashParams->NUM_SAMPLES, "REGION_SIZE must be >= NUM_SAMPLES ");
-
-    tlweKey = new_TLweKey(idashParams->tlweParams);
-    tLweKeyGen(tlweKey);
-    IdashKey *key = new IdashKey(idashParams, tlweKey);
 
     cout << "target_file (headers): " << targetFile << endl;
     cout << "tag_file: " << challengeFile << endl;
@@ -428,6 +418,18 @@ IdashKey *keygen(const std::string &targetFile, const std::string &challengeFile
     cout << "REGION_SIZE: " << idashParams->REGION_SIZE << endl;
     cout << "NUM_TARGET_POSITIONS: " << idashParams->NUM_OUTPUT_POSITIONS << endl;
     cout << "NUM_TAG_POSITIONS: " << idashParams->NUM_INPUT_POSITIONS << endl;
+
+    return idashParams;
+}
+
+IdashKey *keygen_ph2(IdashParams *idashParams) {
+    //TRLWE parameters
+    idashParams->tlweParams = new_TLweParams(idashParams->N, idashParams->k, idashParams->alpha, 0.25);
+
+    TLweKey *tlweKey = new_TLweKey(idashParams->tlweParams);
+    tLweKeyGen(tlweKey);
+    IdashKey *key = new IdashKey(idashParams, tlweKey);
+
     return key;
 }
 
