@@ -57,7 +57,7 @@ encrypted_prediction.bin: params.bin encrypted_data.bin
 
 result.csv: keys.bin encrypted_prediction.bin
 	@echo ===============================================================
-	./bin/decrypt N N
+	./bin/decrypt N
 	@[ -f $@ ] # verify that the target is present
 	@echo ===============================================================
 
