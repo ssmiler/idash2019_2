@@ -624,6 +624,8 @@ void encrypt_data_ph1(EncryptedData &enc_data, const PlaintextData &plain_data, 
     for (uint64_t i=0; i<NUM_CIPHERTEXTS; ++i) {
         tLweSymEncryptZero(pool+i, params.alpha, key.tlweKey);
     }
+
+
     TLweSample* nextSample = pool;
     for (const auto &it: plain_data.data) {
         const uint64_t &pos = it.first;
@@ -642,8 +644,13 @@ void encrypt_data_ph2(EncryptedData &enc_data, const PlaintextData &plain_data, 
     const uint64_t NUM_SAMPLES = params.NUM_SAMPLES;
     REQUIRE_DRAMATICALLY(plain_data.data.size() == params.NUM_INPUT_POSITIONS, "Incomplete plaintext");
 
+    vector<pair<uint64_t, vector<int8_t>>> data_cpy(plain_data.data.begin(), plain_data.data.end());
+
     //add the actual scores
-    for (const auto &it: plain_data.data) {
+    #pragma omp parallel for num_threads(NB_THREADS)
+    for (uint64_t i=0; i<data_cpy.size(); ++i) {
+        auto &it = data_cpy[i];
+
         const uint64_t &pos = it.first;
         const std::vector<int8_t> &values = it.second;
         for (uint64_t sampleId = 0; sampleId < NUM_SAMPLES; sampleId++) {
@@ -677,42 +684,64 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
     const IdashParams &params = *key.idashParams;
     const uint64_t NUM_SAMPLES = params.NUM_SAMPLES;
 
-    TorusPolynomial *plain = new_TorusPolynomial(params.N);
 
+    // initialize output
     for (const auto &it : params.out_features_index) {
         const uint64_t &outPos = it.first;
+
         for (int64_t snp = 0; snp < params.NUM_SNP_PER_POSITIONS; snp++) { // for snp in 0,1,2
-            FeatBigIndex outBIdx = it.second[snp];
-            const TLweSample *cipher = enc_preds.score.at(outBIdx);
-            tLwePhase(plain, cipher, key.tlweKey); // -> a rescaler
-            // initialize output
             std::vector<float> &res = predictions.score[outPos][snp];  // this will create an empty vector in the result
             res.resize(NUM_SAMPLES);
-            // rescale and copy result
+        }
+    }
+
+    vector<pair<uint64_t, array<FeatBigIndex, 3>>> data_cpy(params.out_features_index.begin(), params.out_features_index.end());
+
+    //add the actual scores
+    #pragma omp parallel num_threads(NB_THREADS)
+    {
+        TorusPolynomial *plain = new_TorusPolynomial(params.N);
+
+        #pragma omp for
+        for (uint64_t i=0; i<data_cpy.size(); ++i) {
+            auto &it = data_cpy[i];
+
+        // for (const auto &it : params.out_features_index) {
+            const uint64_t &outPos = it.first;
+            for (int64_t snp = 0; snp < params.NUM_SNP_PER_POSITIONS; snp++) { // for snp in 0,1,2
+                FeatBigIndex outBIdx = it.second[snp];
+                const TLweSample *cipher = enc_preds.score.at(outBIdx);
+                tLwePhase(plain, cipher, key.tlweKey); // -> a rescaler
+                // rescale and copy result
+                std::vector<float> &res = predictions.score[outPos][snp];
+                for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
+                    res[sample] = t32tod(plain->coefsT[sample]);
+                }
+            }
+            /*
+            // renormalize all probabilities
             for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
-                res[sample] = t32tod(plain->coefsT[sample]);
+                double x0 = max<double>(0, predictions.score[outPos][0][sample]);
+                double x1 = max<double>(0, predictions.score[outPos][1][sample]);
+                double x2 = max<double>(0, predictions.score[outPos][2][sample]);
+                double xNorm = x0 + x1 + x2;
+                if (xNorm > 0) {
+                    // normalize so that the sum is +1
+                    predictions.score[outPos][0][sample] = x0 / xNorm;
+                    predictions.score[outPos][1][sample] = x1 / xNorm;
+                    predictions.score[outPos][2][sample] = x2 / xNorm;
+                } else {
+                    //consider these probas as NAN
+                    predictions.score[outPos][0][sample] = 3. / 6.;
+                    predictions.score[outPos][1][sample] = 2. / 6.;
+                    predictions.score[outPos][2][sample] = 1. / 6.;
+                }
             }
+             */
         }
-        /*
-        // renormalize all probabilities
-        for (uint64_t sample = 0; sample < NUM_SAMPLES; ++sample) {
-            double x0 = max<double>(0, predictions.score[outPos][0][sample]);
-            double x1 = max<double>(0, predictions.score[outPos][1][sample]);
-            double x2 = max<double>(0, predictions.score[outPos][2][sample]);
-            double xNorm = x0 + x1 + x2;
-            if (xNorm > 0) {
-                // normalize so that the sum is +1
-                predictions.score[outPos][0][sample] = x0 / xNorm;
-                predictions.score[outPos][1][sample] = x1 / xNorm;
-                predictions.score[outPos][2][sample] = x2 / xNorm;
-            } else {
-                //consider these probas as NAN
-                predictions.score[outPos][0][sample] = 3. / 6.;
-                predictions.score[outPos][1][sample] = 2. / 6.;
-                predictions.score[outPos][2][sample] = 1. / 6.;
-            }
-        }
-         */
+
+        // DELETE
+        delete_TorusPolynomial(plain);
     }
 
 /*
@@ -729,9 +758,6 @@ decrypt_predictions(DecryptedPredictions &predictions, const EncryptedPrediction
     }
 */
 
-
-    // DELETE
-    delete_TorusPolynomial(plain);
 }
 
 void cloud_compute_score(EncryptedPredictions &enc_preds, const EncryptedData &enc_data,
