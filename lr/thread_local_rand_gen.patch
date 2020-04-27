@@ -1,0 +1,26 @@
+diff --git a/src/include/numeric_functions.h b/src/include/numeric_functions.h
+index d770a20..166a39d 100644
+--- a/src/include/numeric_functions.h
++++ b/src/include/numeric_functions.h
+@@ -8,7 +8,7 @@
+ 
+ #ifdef __cplusplus
+ #include <random>
+-extern std::default_random_engine generator;
++extern thread_local std::default_random_engine generator;
+ extern std::uniform_int_distribution<Torus32> uniformTorus32_distrib;
+ static const int64_t _two31 = INT64_C(1) << 31; // 2^31
+ static const int64_t _two32 = INT64_C(1) << 32; // 2^32
+diff --git a/src/libtfhe/numeric-functions.cpp b/src/libtfhe/numeric-functions.cpp
+index c4eada9..2b9c11a 100644
+--- a/src/libtfhe/numeric-functions.cpp
++++ b/src/libtfhe/numeric-functions.cpp
+@@ -8,7 +8,7 @@
+ 
+ using namespace std;
+ 
+-default_random_engine generator;
++thread_local default_random_engine generator;
+ uniform_int_distribution<Torus32> uniformTorus32_distrib(INT32_MIN, INT32_MAX);
+ uniform_int_distribution<int32_t> uniformInt_distrib(INT_MIN, INT_MAX);
+ 

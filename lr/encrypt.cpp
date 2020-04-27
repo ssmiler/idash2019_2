@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
     EncryptedData enc_data;
     read_key(key, KEYS_FILE);
     read_plaintext_data(plain_data, *key.idashParams, challengeFile);
-    encrypt_data_ph1(enc_data, plain_data, key);
     const double time_start_encrypt = profiler.walltime();
+    encrypt_data_ph1(enc_data, plain_data, key);
     encrypt_data_ph2(enc_data, plain_data, key);
     const double time_end_encrypt = profiler.walltime();
     write_encrypted_data(enc_data, *key.idashParams, ENCRYPTED_DATA_FILE);
