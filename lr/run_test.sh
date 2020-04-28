@@ -39,7 +39,7 @@ for nb_cores in 1 4 8
 
             for n in 5 10 15 20 25 30 35 40 45 50
             do
-                sed -i "s/MODEL_FILE=.*/MODEL_FILE=\"..\/..\/ml\/model\/hr\/neighbors="$n"_scale=16384$suffix\"/" Makefile-final.inc
+                sed -i "s/MODEL_FILE=.*/MODEL_FILE=\".\/model\/neighbors="$n"_scale=16384$suffix\"/" Makefile-final.inc
                 sed -i "s/TARGET_HEADERS=.*/TARGET_HEADERS=targets_tmp.txt/" Makefile-final.inc
                 sed -i "s/CHALLENGE_FILE=.*/CHALLENGE_FILE=tag_testing$suffix.txt/" Makefile-final.inc
                 sed -i "s/TARGET_FILE=.*/TARGET_FILE=target_testing$suffix.txt/" Makefile-final.inc
