@@ -25,7 +25,7 @@ for nb_cores in 1 4 8
     do
 
     sed -i "s/#define NB_THREADS.*/#define NB_THREADS $nb_cores/" ../idash.h
-    make build
+    make build 1> /dev/stderr 2>&1
 
     for nb_targets in 80882 20000 40000
     do
@@ -45,7 +45,7 @@ for nb_cores in 1 4 8
                 sed -i "s/TARGET_FILE=.*/TARGET_FILE=target_testing$suffix.txt/" Makefile-final.inc
 
                 make clean > /dev/null
-                log_file=logs/$n$suffix"_"$nb_targets.log
+                log_file=logs/$nb_cores"_"$nb_targets$suffix"_"$n.log
                 make result.csv > $log_file
 
                 python3 ../parse_log.py $log_file $nb_cores,$nb_targets,$suffix,$n
@@ -53,10 +53,10 @@ for nb_cores in 1 4 8
                 # make auc.png
             done
 
-            rm tag_testing$suffix.txt
-            rm target_testing$suffix.txt
+            rm tag_testing$suffix.txt 1> /dev/stderr 2>&1
+            rm target_testing$suffix.txt 1> /dev/stderr 2>&1
         done
 
-        rm targets_tmp.txt
+        rm targets_tmp.txt 1> /dev/stderr 2>&1
     done
 done
