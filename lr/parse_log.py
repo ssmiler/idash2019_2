@@ -57,4 +57,4 @@ del fields['tot_time']
 
 #print('{},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_tot},{enc_ram},{cld_fhe},{cld_ser},{cld_tot},{cld_ram},{dec_fhe},{dec_ser},{dec_tot},{dec_ram}'.format(prefix, **fields))
 #print('{},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_tot},{enc_ram},{cld_fhe},{cld_ser},{cld_tot},{cld_ram},{dec_fhe},,,{dec_ram}'.format(prefix, **fields))
-print('{},{kg_fhe},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_ram},{cld_fhe},{cld_ser},{cld_ram},{dec_fhe},,{dec_ram},{enc_inp_size:.2f},{enc_out_size:.2f}'.format(prefix, **fields))
+print('{},{kg_fhe},{kg_tot},{kg_ram},{enc_fhe},{enc_ser},{enc_ram},{cld_fhe},{cld_ser},{cld_ram},{dec_fhe},{dec_ser},{dec_ram},{enc_inp_size:.2f},{enc_out_size:.2f}'.format(prefix, **fields))
