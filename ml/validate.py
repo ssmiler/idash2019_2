@@ -18,6 +18,8 @@ df_pred = pd.read_csv(args.pred_file)
 df_pred = df_pred.set_index(['Subject ID', 'target SNP'])
 df_pred.columns = list(map(int, df_pred.columns))
 
+mpreds = np.argmax(df_pred.values, axis=1).reshape(-1,1004, order='F')
+
 def read_and_transform(inp_file):
   df = pd.read_csv(inp_file, sep='\t', header=None).T # read input csv file and transpose
   df.columns = df.loc[1,:].astype(int).values         # set SNP position as column index
@@ -28,6 +30,13 @@ df_target = read_and_transform(args.target_file)
 df_target = df_target[args.ignore_first:].reset_index(drop=True)
 df_target = df_target.stack()[df_pred.index]
 
+mtargets = df_target.values.reshape(-1,1004, order='F')
+
 df_target = pd.get_dummies(df_target)
 
 print("Micro-AUC score: {}".format(sklearn.metrics.roc_auc_score(df_target, df_pred, average='micro')))
+
+print("MAP score: {}".format(np.mean(mpreds == mtargets)))
+print("MAP non-ref score: {}".format(np.mean(((mtargets!=0)&(mpreds == mtargets)).sum(axis=1) / ((mtargets!=0)).sum(axis=1))))
+
+
