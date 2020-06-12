@@ -1,20 +1,19 @@
 jobs=16
 
 neighbors=$1
-train_len=$2
-data_suffix=$3
+population=$2
 
-echo $neighbors $train_len $data_suffix
+echo neighbors $neighbors population $population
 
-model_out_path=model/vw/neighbors=$neighbors$data_suffix
+train_len=`cat "../orig_data/training_sample_ids$data_suffix.list" | wc -l`
+
+model_out_path=../models/vw/neighbors=$neighbors$population
 mkdir -p $model_out_path
 
-target_snp=`cat ../data/target_geno_model_coordinates.txt`
-# target_snp=`cat data/target_snp`
-# target_snp=`head -n 20 data/target_snp`
-# target_snp="16051248"
+target_snp=`cat ../orig_data/target_geno_model_coordinates.txt`
+# target_snp=`head -n 4 ../orig_data/target_geno_model_coordinates.txt`
 
-cp data/ta*_training$data_suffix.pickle /dev/shm
+mkdir -p tmp
 
 function learn()
 {
@@ -22,14 +21,14 @@ function learn()
   neighbors=$2
   train_len=$3
   model_out_path=$4
-  data_suffix=$5
+  population=$5
 
-  data_out_path=/dev/shm
+  data_out_path=./tmp
 
-  #echo $pos $neighbors $model_out_path $train_len
+  echo SNP $pos
 
   # export data
-  python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file /dev/shm/tag_training$data_suffix.pickle --target_file /dev/shm/target_training$data_suffix.pickle
+  python3 to_vw.py -n $neighbors -s $pos -o $data_out_path --tag_file ../data/tag_train$population.pickle --target_file ../data/target_train$population.pickle
   rm $data_out_path/$pos.y
 
   file_X=$data_out_path/$pos.X
@@ -38,6 +37,7 @@ function learn()
   do
     file_y=$data_out_path/$pos"_"$snp.y
     model=$model_out_path/$pos"_"$snp.model
+    model_hr=${model/.model}.hr
     cache=$model.cache
 
     id="$pos"_"$snp"
@@ -50,31 +50,15 @@ function learn()
     params+="--holdout_off "
     params+="--passes 200 "
     params+="--id $id "
-    # params+="--threads 1 "
-    # params+="-q :: --leave_duplicate_interactions " #quadratic interactions
 
-    declare -A opt_params=(
-      ["orig"]=""
-      # ["bs=5"]="--bootstrap 5"
-      # ["bs=5_rw"]="--bootstrap 5 --random_weights 1"
-      # ["bs=10"]="--bootstrap 10"
-      # ["bs=10_rw"]="--bootstrap 10 --random_weights 1"
-      # ["ftrl"]="--ftrl"
-      # ["ftrl_bs=10_rw"]="--ftrl --bootstrap 10 --random_weights 1"
-      # ["boost=5_alg=BBM"]="--boosting 5 --alg BBM"
-      # ["boost=5_alg=log"]="--boosting 5 --alg logistic"
-    )
-    for fp in "${!opt_params[@]}"
-    do
-      opt_param="${opt_params[$fp]}"
-      paste -d ' ' $file_y $file_X | head -n $train_len | vw $params $opt_param -f $model --cache_file $cache
+    # learn logreg model on first $train_len lines
+    paste -d ' ' $file_y $file_X | head -n $train_len | vw $params -f $model --cache_file $cache
 
-      # model to human-readable format
-      paste -d ' ' $file_y $file_X | vw --quiet -i $model --invert_hash ${model/.model}_$fp.hr -t
+    # model to human-readable format
+    paste -d ' ' $file_y $file_X | vw --quiet -i $model --invert_hash $model_hr -t
 
-      rm $cache
-      rm $model
-    done
+    rm $cache
+    rm $model
 
     rm $file_y
   done
@@ -83,15 +67,6 @@ function learn()
 }
 export -f learn
 
-parallel -j $jobs learn {} $neighbors $train_len $model_out_path $data_suffix ::: $target_snp
+parallel -j $jobs learn {} $neighbors $train_len $model_out_path $population ::: $target_snp
 
-rm /dev/shm/*.pickle
-
-exit
-
-#remove data and models
-rm $model_out_path -rf
-
-
-
-
+rm -rf tmp

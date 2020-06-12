@@ -1,0 +1,23 @@
+#####################################################################
+# Logistic regression model learning for genomic imputation
+# docker build -t idash_2019_chimera:train -f Dockerfile.train .
+# docker run -it --rm -v $(pwd):/learn idash_2019_chimera:train bash
+#####################################################################
+
+FROM ubuntu:18.04
+
+# install dependencies
+RUN apt-get update -qq \
+ && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+    vowpal-wabbit \
+    python3 \
+    python3-pip \
+    parallel
+
+# install python libraries
+RUN pip3 install \
+    numpy \
+    pandas \
+    scikit-learn
+
+WORKDIR /idash

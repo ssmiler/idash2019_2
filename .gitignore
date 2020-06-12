@@ -1,6 +1,5 @@
 /lr/build/*
 /lr/run/bin*
-/ml/data/*
-/ml/model/neighbors*final*
-/ml/model/vw*
-/ml/model/hr*
+/orig_data/*
+/data/*
+/models*
