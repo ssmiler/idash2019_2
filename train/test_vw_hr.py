@@ -1,5 +1,4 @@
 import argparse
-import glob
 
 parser = argparse.ArgumentParser(description='Test VW human-readable models')
 parser.add_argument('-m', '--models', type=str,
@@ -12,6 +11,7 @@ parser.add_argument('--out_dir', type=str,
 
 args = parser.parse_args()
 
+import glob
 import pandas as pd
 import numpy as np
 import sklearn

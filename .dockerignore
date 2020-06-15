@@ -1,5 +1,1 @@
-data/*
-models/*
-tfhe/*
-orig_data/*
-.git/*
+./*

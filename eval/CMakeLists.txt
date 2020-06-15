@@ -19,10 +19,7 @@ set(PROG_SRC
         keygen.cpp
         encrypt.cpp
         cloud.cpp
-        decrypt.cpp
-        validation.cpp
-        validation2.cpp
-        plaintext_algo.cpp)
+        decrypt.cpp)
 
 if (APPLE)
     #set(LIBTFHE tfhe-spqlios-fma)
