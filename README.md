@@ -15,9 +15,12 @@ The secure genome imputation consists of 3 steps:
 
 Here, steps 1 and 3 are executed by party A and step 2 is executed by party B.
 
-The encryption, decryption and imputation uses the homomorphic encryption library [TFHE](https://github.com/tfhe/tfhe).
+The encryption, decryption and imputation use the homomorphic encryption library [TFHE](https://github.com/tfhe/tfhe).
 The tag SNPs and the resulting probabilities for target SNPs are encrypted throughout the whole process.
+Only party A has access to tag and target SNPs in clear.
 The imputation models are available to the evaluation party B only.
+
+The secure genome imputation is open-source software distributed under the terms of the Apache 2.0 license.
 
 In what follows we describe how to learn imputation models and how to perform secure genome imputation.
 
@@ -117,7 +120,7 @@ The output shall look like (observe that the accuracy is somewhat worse when com
 Micro-AUC score: 0.98147786 pred max-min 8191.0 (../models/vw/neighbors=5/*.hr)
 ```
 
-Discretized genome imputation models which will be used in the secure imputation phase (described in next [section](#secure-imputation-model-evaluation)) are placed in folder `../models/hr/neighbors=$neighbors$population`:
+Discretized genome imputation models which will be used in the secure imputation phase (described in next [section](#secure-evaluation-of-imputation-models)) are placed in folder `../models/hr/neighbors=$neighbors$population`:
 ```bash
 >> ls ../models/hr/neighbors=$neighbors$population | head
 17084716_0.hr
@@ -133,7 +136,7 @@ Once the desired logistic regression models are obtained we can proceed to the i
 
 ### Prerequisites
 
-Firstly, we need to clone the [TFHE](https://github.com/tfhe/tfhe) library as a submodule and apply a patch to it.
+Firstly, we need to clone the TFHE library as a submodule and apply a patch to it.
 Run the following instruction from the root folder of the repository:
 
 ```bash
@@ -180,8 +183,10 @@ The project must be re-compiled in this case.
 ### Execute secure imputation
 
 Makefile target `auc` executes the key generation, encryption, missing SNPs imputation and decryption steps.
+Besides, accuracy scores (micro-AUC, macro and macro non-reference accuracies) for the imputed target SNPs in output file `result_bypos.csv` are computed also.
+
 ```bash
-make result_bypos.csv
+make auc
 ```
 
 The typical output on a mid-end laptop shall looks like:
@@ -231,21 +236,14 @@ serialization wall time (seconds): 395.26
 total wall time (seconds)........: 397.802
 RAM usage (MB)...................: 2957.85
 ===============================================================
-```
-
-Accuracy scores (micro-AUC, macro and macro non-reference accuracies) for the imputed target SNPs in file `result_bypos.csv` are computed using `auc` target of the make file or using python script [`validate.py`](eval/validate.py) directly. Typical output:
-
-```
-# make auc
 python3 ../validate.py --pred_file result_bypos.csv --target_file "../../orig_data/target_testing.txt"
 Micro-AUC score: 0.9814777758605334
 MAP score: 0.8956327825366766
 MAP non-ref score: 0.7289859822447496
 ```
 
-
-The imputation model to use is set in [file](eval/run/Makefile-final.inc) (variable `MODEL_FILE`).
-The default value corresponds to 5 neighbors and all population model obtained previously.
+The imputation model to use is set in the [Makefile-final.inc](eval/run/Makefile-final.inc) file (variable `MODEL_FILE`).
+The default value corresponds to 5 neighbors and no population stratification model obtained previously.
 
 ## Paper experiments
 
