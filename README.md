@@ -11,7 +11,7 @@ The secure genome imputation consists of 3 steps:
 
 1. Encode/encrypt tag SNPs
 2. Secure impute target SNPs
-3. Decrypt target SNPs imputed probabilities
+3. Decrypt/decode target SNPs imputed probabilities
 
 Here, steps 1 and 3 are executed by party A and step 2 is executed by party B.
 
@@ -20,13 +20,13 @@ The tag SNPs and the resulting probabilities for target SNPs are encrypted throu
 Only party A has access to tag and target SNPs in clear.
 The imputation models are available to the evaluation party B only.
 
-The secure genome imputation is open-source software distributed under the terms of the Apache 2.0 license.
+This code is an open-source software distributed under the terms of the Apache 2.0 license.
 
 In what follows we describe how to learn imputation models and how to perform secure genome imputation.
 
 ## Learn imputation models
 
-Input genome data files must be located in folder is `orig_data` (relative to repository root).
+Input genome data files must be located in the folder `orig_data` (relative to repository root).
 The obtained models will be placed under folder `models/hr/neighbors=<neighbors><population>` where `<neighbors>` and `<population>` are model configuration parameters.
 
 ### Prerequisites
@@ -94,7 +94,7 @@ The total number of obtained models is 3 times the number of target SNPs (3 mode
 ```
 
 The number of neighboring tag SNPs to use in each model training is configurable (we have tested from 5 to 50 neighbors).
-For the population stratification you can choose on of the following values: `_AFR`, `_AMR`, `_EUR` or empty value for no stratification.
+ For the population stratification you can choose one of the following values: `_AFR`, `_AMR`, `_EUR` or empty value for no stratification.
 
 The micro-AUC score for the predictions obtained by these models is computed with command (keep double quotation marks around `*.hr`):
 ```bash
@@ -189,7 +189,7 @@ Besides, accuracy scores (micro-AUC, macro and macro non-reference accuracies) f
 make auc
 ```
 
-The typical output on a mid-end laptop shall looks like:
+The typical output on a mid-end laptop shall look like:
 ```
 ===============================================================
 ./bin/keygen "../../orig_data/target_geno_model_coordinates.txt" "../../orig_data/tag_testing.txt" 1
@@ -243,7 +243,7 @@ MAP non-ref score: 0.7289859822447496
 ```
 
 The imputation model to use is set in the [Makefile-final.inc](eval/run/Makefile-final.inc) file (variable `MODEL_FILE`).
-The default value corresponds to 5 neighbors and no population stratification model obtained previously.
+The default value of this variable corresponds to the model learned earlier (5 neighbors and no population stratification).
 
 ## Paper experiments
 
