@@ -26,7 +26,7 @@ In what follows we describe how to learn imputation models and how to perform se
 
 ## Learn imputation models
 
-Input genome data files must be located in the folder `orig_data` (relative to repository root).
+Input genome data files, downloaded from [here](https://github.com/K-miran/secure-imputation), must be located in the folder `orig_data` (relative to repository root).
 The obtained models will be placed under folder `models/hr/neighbors=<neighbors><population>` where `<neighbors>` and `<population>` are model configuration parameters.
 
 ### Prerequisites
@@ -247,4 +247,4 @@ The default value of this variable corresponds to the model learned earlier (5 n
 
 ## Paper experiments
 
-All the experiments performed for paper [todo ref] are grouped in the bash [script](train/experiment.sh) for model learning phase and bash [script](eval/experiment.sh) for model evaluation phase.
+All the experiments performed for [paper](https://www.biorxiv.org/content/10.1101/2020.07.02.183459v1) are grouped in the bash [script](train/experiment.sh) for model learning phase and bash [script](eval/experiment.sh) for model evaluation phase.
