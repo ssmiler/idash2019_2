@@ -10,8 +10,8 @@ train_len=`cat "../orig_data/training_sample_ids$data_suffix.list" | wc -l`
 model_out_path=../models/vw/neighbors=$neighbors$population
 mkdir -p $model_out_path
 
-target_snp=`cat ../orig_data/target_geno_model_coordinates.txt`
-# target_snp=`head -n 4 ../orig_data/target_geno_model_coordinates.txt`
+target_snp=`cat ../data/target_snp`
+# target_snp=`head -n 4 ../data/target_snp`
 
 mkdir -p tmp
 
