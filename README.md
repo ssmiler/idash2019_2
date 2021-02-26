@@ -27,9 +27,27 @@ In what follows we describe how to learn imputation models and how to perform se
 ## Learn imputation models
 
 Input genome data files, downloaded from [here](https://github.com/K-miran/secure-imputation), must be located in the folder `orig_data` (relative to repository root).
+The `orig_data` folder should look like:
+```bash
+# ls ../orig_data | head
+tag_testing.txt
+tag_training.txt
+target_testing.txt
+target_training.txt
+testing_sample_ids.list
+training_sample_ids.list
+```
+In case stratified population is used the `orig_data` folder will have additional `*_AFR.list`, `*_AMR.list` and `*_EUR.list` files with indices of the respective population in the dataset. 
+
 The obtained models will be placed under folder `models/hr/neighbors=<neighbors><population>` where `<neighbors>` and `<population>` are model configuration parameters.
 
 ### Prerequisites
+
+First of all clone repository and navitage into it:
+```bash
+git clone https://github.com/ssmiler/idash2019_2.git --recursive
+cd idash2019_2
+```
 
 You can either install the needed packages on your machine or use a docker container.
 Please refer to respective section.
@@ -69,10 +87,12 @@ If all went well you should obtain something like this in the output data folder
 ```bash
 # ls ../data | head
 tag_test.pickle
-tag_test_AFR.pickle
-tag_test_AMR.pickle
-...
+tag_train.pickle
+target_snp
+target_test.pickle
+target_train.pickle
 ```
+If stratified population indices are available in the `orig_data` folder the output data will contain `*.pickle` files for each population.  
 
 ### Logistic regression models for genome imputation
 
@@ -96,7 +116,7 @@ The total number of obtained models is 3 times the number of target SNPs (3 mode
 The number of neighboring tag SNPs to use in each model training is configurable (we have tested from 5 to 50 neighbors).
  For the population stratification you can choose one of the following values: `_AFR`, `_AMR`, `_EUR` or empty value for no stratification.
 
-The micro-AUC score for the predictions obtained by these models is computed with command (keep double quotation marks around `*.hr`):
+The micro-AUC score for the predictions obtained by these models is computed with command (keep double quotation marks around `*.hr` otherwise the 242646 model files will overflow the command line buffer :smile:):
 ```bash
 python3 test_vw_hr.py -m ../models/vw/neighbors=$neighbors$population/"*.hr" --tag_file ../data/tag_test$population.pickle --target_file ../data/target_test$population.pickle
 ```
